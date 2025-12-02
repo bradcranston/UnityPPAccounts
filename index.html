@@ -5,14 +5,54 @@
     <style>
       @import "./src/style.css";
     </style>
-    <title>JSDev</title>
+    <title>Unity PP Accounts</title>
   </head>
   <body>
-    <h1>Alright. You're set.</h1>
-      <h2 class="tintedBlackLeft">Now build something amazing!</h2>
-      <p>JS in FM is amazing</p>
-    <button type="button">Click Me!</button>
+    <div class="container">
+      <header>
+        <h1>Account List</h1>
+        <div class="stats">
+          <span class="stat-item">Total: <span id="totalCount">0</span></span>
+          <span class="stat-item">Active: <span id="activeCount">0</span></span>
+        </div>
+      </header>
+      
+      <div class="controls">
+        <input type="text" id="searchInput" placeholder="Search accounts..." />
+        <select id="filterSelect">
+          <option value="all">All Accounts</option>
+          <option value="active">Active Only</option>
+          <option value="inactive">Inactive Only</option>
+        </select>
+        <button id="addAccountBtn" class="add-account-btn">Add Account</button>
+      </div>
+      
+      <div class="account-list" id="accountList">
+        <!-- Account items will be populated here -->
+      </div>
+    </div>
 
+    <!-- Add Account Modal -->
+    <div id="addAccountModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Add Account</h2>
+          <span class="close" id="closeModal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="modal-controls">
+            <input type="text" id="portalSearchInput" placeholder="Search available portals..." />
+            <div class="portal-count">
+              <span id="availableCount">0</span> portals available
+            </div>
+          </div>
+          <div class="portal-list" id="portalList">
+            <!-- Portal items will be populated here -->
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <script type="module">
       import "./src/index.js";
     </script>
