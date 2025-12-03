@@ -10,7 +10,16 @@
   <body>
     <div class="container">
       <header>
-        <h1>Account List</h1>
+        <div class="header-left">
+          <div class="account-type-tabs">
+            <button class="tab-button active" id="individualTab" data-type="Individual">
+              Individual Accounts
+            </button>
+            <button class="tab-button" id="groupTab" data-type="Group">
+              Group Accounts
+            </button>
+          </div>
+        </div>
         <div class="stats">
           <span class="stat-item">Total: <span id="totalCount">0</span></span>
           <span class="stat-item">Active: <span id="activeCount">0</span></span>
@@ -19,6 +28,7 @@
       
       <div class="controls">
         <input type="text" id="searchInput" placeholder="Search accounts..." />
+        <button id="clearFiltersBtn" class="clear-filters-btn" title="Clear filters">Clear</button>
         <select id="filterSelect">
           <option value="all">All Accounts</option>
           <option value="active">Active Only</option>

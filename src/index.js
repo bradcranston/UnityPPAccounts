@@ -2,6 +2,8 @@
 class AccountListManager {
   constructor() {
     this.accounts = [];
+    this.individualAccounts = [];
+    this.groupAccounts = [];
     this.filteredAccounts = [];
     this.allPortals = [];
     this.availablePortals = [];
@@ -9,12 +11,29 @@ class AccountListManager {
     this.searchTerm = '';
     this.filterType = 'all';
     this.portalSearchTerm = '';
+    this.currentAccountType = 'Individual'; // 'Individual' or 'Group'
+    this.isAddingAccount = false; // Flag to prevent duplicate additions
+    
+    // Separate filter states for each account type
+    this.individualFilters = {
+      searchTerm: '',
+      filterType: 'all'
+    };
+    this.groupFilters = {
+      searchTerm: '',
+      filterType: 'all'
+    };
     
     this.initializeElements();
     this.attachEventListeners();
     this.attachAccountEventListeners();
     this.attachModalEventListeners();
     this.loadInitialData();
+    
+    // Set initial container mode
+    setTimeout(() => {
+      this.updateTabStyles();
+    }, 100);
   }
 
   initializeElements() {
@@ -29,21 +48,39 @@ class AccountListManager {
     this.portalSearchInput = document.getElementById('portalSearchInput');
     this.portalList = document.getElementById('portalList');
     this.availableCount = document.getElementById('availableCount');
+    this.individualTab = document.getElementById('individualTab');
+    this.groupTab = document.getElementById('groupTab');
+    this.clearFiltersBtn = document.getElementById('clearFiltersBtn');
   }
 
   attachEventListeners() {
     this.searchInput.addEventListener('input', (e) => {
       this.searchTerm = e.target.value.toLowerCase();
+      this.saveCurrentFilterState(); // Save state when it changes
       this.filterAndRenderAccounts();
     });
 
     this.filterSelect.addEventListener('change', (e) => {
       this.filterType = e.target.value;
+      this.saveCurrentFilterState(); // Save state when it changes
       this.filterAndRenderAccounts();
     });
 
     this.addAccountBtn.addEventListener('click', () => {
       this.showAddAccountModal();
+    });
+
+    // Tab event listeners
+    this.individualTab.addEventListener('click', () => {
+      this.switchToAccountType('Individual');
+    });
+
+    this.groupTab.addEventListener('click', () => {
+      this.switchToAccountType('Group');
+    });
+
+    this.clearFiltersBtn.addEventListener('click', () => {
+      this.clearFilters();
     });
   }
 
@@ -73,12 +110,14 @@ class AccountListManager {
   loadInitialData() {
     // Show empty state until FileMaker passes in data
     console.log('Account List Interface ready - waiting for FileMaker data...');
+    this.updateTabStyles();
     this.showEmptyState();
   }
 
-  setAccountData(accountsData, portalsData = null) {
+  setAccountData(accountsData, portalsData = null, selectedType = null) {
     console.log('setAccountData called with accounts:', accountsData);
     console.log('setAccountData called with portals:', portalsData);
+    console.log('setAccountData called with selected type:', selectedType);
     console.log('Accounts data type:', typeof accountsData);
     
     // Parse JSON string if needed for accounts
@@ -140,23 +179,161 @@ class AccountListManager {
       console.log('No portals data provided');
     }
 
+    // Separate accounts by type
+    this.individualAccounts = this.accounts.filter(acc => acc.Type === 'Individual');
+    this.groupAccounts = this.accounts.filter(acc => acc.Type === 'Group');
+    
+    console.log('Separating accounts by type:');
+    console.log('- Individual accounts:', this.individualAccounts.length, this.individualAccounts.map(a => a.Name));
+    console.log('- Group accounts:', this.groupAccounts.length, this.groupAccounts.map(a => a.Name));
+    
+    // Set the selected type if provided
+    if (selectedType && (selectedType === 'Individual' || selectedType === 'Group')) {
+      this.currentAccountType = selectedType;
+      console.log('Set current account type to:', selectedType);
+    }
+    
     console.log('Final accounts array:', this.accounts);
+    console.log('Individual accounts:', this.individualAccounts.length);
+    console.log('Group accounts:', this.groupAccounts.length);
     console.log('Final portals array:', this.allPortals);
+    
+    this.updateCurrentAccountsList();
+    this.updateTabStyles();
+    
+    // Initialize filter state
+    this.restoreFilterState();
+    
     this.filterAndRenderAccounts();
     this.updateStats();
   }
 
+  clearFilters() {
+    console.log('Clearing filters for', this.currentAccountType);
+    
+    // Clear UI elements
+    this.searchInput.value = '';
+    this.searchTerm = '';
+    this.filterSelect.value = 'all';
+    this.filterType = 'all';
+    
+    // Clear the current type's filter state
+    const currentFilters = this.getCurrentFilters();
+    currentFilters.searchTerm = '';
+    currentFilters.filterType = 'all';
+    
+    this.filterAndRenderAccounts();
+  }
+
+  getCurrentFilters() {
+    return this.currentAccountType === 'Individual' ? this.individualFilters : this.groupFilters;
+  }
+  
+  saveCurrentFilterState() {
+    const currentFilters = this.getCurrentFilters();
+    currentFilters.searchTerm = (this.searchInput?.value || '').toLowerCase();
+    currentFilters.filterType = this.filterSelect?.value || 'all';
+    console.log('Saved filter state for', this.currentAccountType, ':', currentFilters);
+  }
+  
+  restoreFilterState() {
+    const currentFilters = this.getCurrentFilters();
+    
+    if (this.searchInput) {
+      this.searchInput.value = currentFilters.searchTerm;
+    }
+    if (this.filterSelect) {
+      this.filterSelect.value = currentFilters.filterType;
+    }
+    
+    // Update internal state
+    this.searchTerm = currentFilters.searchTerm;
+    this.filterType = currentFilters.filterType;
+    
+    console.log('Restored filter state for', this.currentAccountType, ':', currentFilters);
+  }
+
+  updateCurrentAccountsList() {
+    console.log('updateCurrentAccountsList called with type:', this.currentAccountType);
+    
+    // Get the current list based on selected type
+    const previousLength = this.currentAccounts?.length || 0;
+    this.currentAccounts = this.currentAccountType === 'Individual' 
+      ? this.individualAccounts 
+      : this.groupAccounts;
+      
+    console.log('- Previous currentAccounts length:', previousLength);
+    console.log('- Individual accounts available:', this.individualAccounts?.length || 0);
+    console.log('- Group accounts available:', this.groupAccounts?.length || 0);
+    console.log('- New currentAccounts length:', this.currentAccounts?.length || 0);
+    console.log('- Current accounts:', this.currentAccounts?.map(a => a.Name) || []);
+  }
+
+  switchToAccountType(type) {
+    console.log('=== SWITCHING TO ACCOUNT TYPE:', type, '===');
+    console.log('Previous type was:', this.currentAccountType);
+    
+    // Save current filter state before switching
+    this.saveCurrentFilterState();
+    
+    // Switch account type
+    this.currentAccountType = type;
+    
+    // Restore filter state for new type
+    this.restoreFilterState();
+    
+    console.log('Filter values after restore - Search:', `"${this.searchTerm}"`, 'Filter:', this.filterType);
+    
+    this.updateTabStyles();
+    this.updateCurrentAccountsList();
+    
+    console.log('About to filter and render...');
+    this.filterAndRenderAccounts();
+    this.updateStats();
+    
+    console.log('=== SWITCH COMPLETE ===');
+  }
+
+  updateTabStyles() {
+    // Remove active class from all tabs
+    this.individualTab.classList.remove('active');
+    this.groupTab.classList.remove('active');
+    
+    // Add active class to current tab
+    if (this.currentAccountType === 'Individual') {
+      this.individualTab.classList.add('active');
+    } else {
+      this.groupTab.classList.add('active');
+    }
+    
+    // Update container background to reflect current type
+    const container = document.querySelector('.container');
+    container.className = 'container ' + (this.currentAccountType === 'Individual' ? 'individual-mode' : 'group-mode');
+  }
+
   filterAndRenderAccounts() {
-    console.log('filterAndRenderAccounts called');
-    console.log('Total accounts:', this.accounts.length);
-    console.log('Search term:', this.searchTerm);
+    console.log('=== FILTER AND RENDER ACCOUNTS ===');
+    
+    // Ensure currentAccounts is properly set
+    if (!this.currentAccounts) {
+      console.log('currentAccounts was null/undefined, updating...');
+      this.updateCurrentAccountsList();
+    }
+    
+    console.log('Current account type:', this.currentAccountType);
+    console.log('Total accounts to filter:', this.currentAccounts?.length || 0);
+    console.log('Search term:', `"${this.searchTerm}"`);
     console.log('Filter type:', this.filterType);
     
-    this.filteredAccounts = this.accounts.filter(account => {
+    if (this.currentAccounts?.length > 0) {
+      console.log('Sample account names:', this.currentAccounts.slice(0, 3).map(a => a.Name));
+    }
+    
+    this.filteredAccounts = (this.currentAccounts || []).filter(account => {
       // Search filter
-      const matchesSearch = this.searchTerm === '' || 
-        account.Name.toLowerCase().includes(this.searchTerm) ||
-        account.AccountNumber.toString().includes(this.searchTerm);
+      const nameMatch = account.Name?.toLowerCase().includes(this.searchTerm);
+      const numberMatch = account.AccountNumber?.toString().includes(this.searchTerm);
+      const matchesSearch = this.searchTerm === '' || nameMatch || numberMatch;
 
       // Status filter
       const isActive = account.fActive === 1;
@@ -165,11 +342,22 @@ class AccountListManager {
         (this.filterType === 'active' && isActive) ||
         (this.filterType === 'inactive' && !isActive);
 
-      return matchesSearch && matchesFilter;
+      const passes = matchesSearch && matchesFilter;
+      
+      if (this.searchTerm !== '' && nameMatch) {
+        console.log(`Account "${account.Name}" matches search "${this.searchTerm}"`);
+      }
+      
+      return passes;
     });
 
-    console.log('Filtered accounts:', this.filteredAccounts.length);
+    console.log('Filtered accounts count:', this.filteredAccounts.length);
+    if (this.filteredAccounts.length > 0) {
+      console.log('Filtered account names:', this.filteredAccounts.slice(0, 5).map(a => a.Name));
+    }
+    
     this.renderAccounts();
+    console.log('=== FILTER AND RENDER COMPLETE ===');
   }
 
   renderAccounts() {
@@ -259,13 +447,15 @@ class AccountListManager {
   updateAccountStatus(accountId, newStatus) {
     console.log('updateAccountStatus called with:', accountId, newStatus);
     
-    // Find and update the account
+    // Find and update the account in all arrays
     const accountIndex = this.accounts.findIndex(acc => acc.__ID.toString() === accountId);
+    const currentAccountIndex = this.currentAccounts.findIndex(acc => acc.__ID.toString() === accountId);
     console.log('Found account at index:', accountIndex);
     
-    if (accountIndex !== -1) {
+    if (accountIndex !== -1 && currentAccountIndex !== -1) {
       const oldStatus = this.accounts[accountIndex].fActive;
       this.accounts[accountIndex].fActive = newStatus;
+      this.currentAccounts[currentAccountIndex].fActive = newStatus;
       console.log('Updated account status from', oldStatus, 'to', newStatus);
       
       // Prepare data for FileMaker script
@@ -296,7 +486,7 @@ class AccountListManager {
   deleteAccount(accountId) {
     console.log('deleteAccount called with:', accountId);
     
-    // Find the account
+    // Find the account in all arrays
     const account = this.accounts.find(acc => acc.__ID.toString() === accountId);
     
     if (account) {
@@ -313,11 +503,16 @@ class AccountListManager {
       // Call FileMaker script
       this.callFileMakerScript('Manage: Accounts', JSON.stringify(scriptParameter));
       
-      // Remove from local array (optimistic update)
+      // Remove from all arrays (optimistic update)
       const accountIndex = this.accounts.findIndex(acc => acc.__ID.toString() === accountId);
       if (accountIndex !== -1) {
         this.accounts.splice(accountIndex, 1);
-        console.log('Removed account from local array');
+      }
+      
+      const currentAccountIndex = this.currentAccounts.findIndex(acc => acc.__ID.toString() === accountId);
+      if (currentAccountIndex !== -1) {
+        this.currentAccounts.splice(currentAccountIndex, 1);
+        console.log('Removed account from local arrays');
       }
       
       // Re-filter and render
@@ -334,8 +529,9 @@ class AccountListManager {
   }
 
   updateStats() {
-    const total = this.accounts.length;
-    const active = this.accounts.filter(account => account.fActive === 1).length;
+    const accounts = this.currentAccounts || [];
+    const total = accounts.length;
+    const active = accounts.filter(account => account.fActive === 1).length;
     
     this.totalCount.textContent = total;
     this.activeCount.textContent = active;
@@ -365,6 +561,7 @@ class AccountListManager {
     document.body.style.overflow = 'auto';
     this.portalSearchInput.value = '';
     this.portalSearchTerm = '';
+    this.isAddingAccount = false; // Reset flag when modal is closed
   }
 
   updateAvailablePortals() {
@@ -465,21 +662,47 @@ class AccountListManager {
   }
 
   attachPortalEventListeners() {
-    this.portalList.addEventListener('click', (e) => {
+    // Remove any existing event listeners first
+    const existingButtons = this.portalList.querySelectorAll('.add-portal-btn');
+    existingButtons.forEach(button => {
+      button.removeEventListener('click', this.handlePortalAdd);
+    });
+    
+    // Use event delegation instead of individual button listeners
+    this.portalList.removeEventListener('click', this.handlePortalListClick);
+    
+    this.handlePortalListClick = (e) => {
       if (e.target.classList.contains('add-portal-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (this.isAddingAccount) {
+          console.log('Already adding an account, ignoring duplicate click');
+          return;
+        }
+        
         const portalData = JSON.parse(e.target.getAttribute('data-portal').replace(/&apos;/g, "'"));
         this.addPortalAsAccount(portalData);
       }
-    });
+    };
+    
+    this.portalList.addEventListener('click', this.handlePortalListClick);
   }
 
   addPortalAsAccount(portalData) {
+    if (this.isAddingAccount) {
+      console.log('Already adding an account, preventing duplicate');
+      return;
+    }
+    
     console.log('Adding portal as account:', portalData);
+    this.isAddingAccount = true;
 
-    // Prepare data for FileMaker script
+    // Prepare data for FileMaker script, including current account type
     const scriptParameter = {
       ...portalData,
-      mode: 'addAccount'
+      mode: 'addAccount',
+      Type: this.currentAccountType
     };
 
     console.log('Calling FileMaker script with parameter:', scriptParameter);
@@ -489,6 +712,11 @@ class AccountListManager {
 
     // Hide the modal
     this.hideAddAccountModal();
+
+    // Reset the flag after a short delay
+    setTimeout(() => {
+      this.isAddingAccount = false;
+    }, 1000);
 
     // Notify FileMaker of the change (legacy callback)
     this.notifyFileMaker('accountAdded', {
@@ -535,17 +763,23 @@ class AccountListManager {
   }
 
   // Public methods for FileMaker to call
-  refreshData(accountsData, portalsData = null) {
-    this.setAccountData(accountsData, portalsData);
+  refreshData(accountsData, portalsData = null, selectedType = null) {
+    this.setAccountData(accountsData, portalsData, selectedType);
   }
 
   getAccountData() {
     return {
       accounts: this.accounts,
+      individualAccounts: this.individualAccounts,
+      groupAccounts: this.groupAccounts,
+      currentAccounts: this.currentAccounts,
       filteredAccounts: this.filteredAccounts,
+      currentAccountType: this.currentAccountType,
       stats: {
-        total: this.accounts.length,
-        active: this.accounts.filter(acc => acc.fActive === 1).length
+        total: this.currentAccounts.length,
+        active: this.currentAccounts.filter(acc => acc.fActive === 1).length,
+        totalIndividual: this.individualAccounts.length,
+        totalGroup: this.groupAccounts.length
       }
     };
   }
@@ -567,9 +801,9 @@ class AccountListManager {
 const accountManager = new AccountListManager();
 
 // Export functions to window for FileMaker to access (using underscore notation)
-window.setAccountData = (accountsData, portalsData = null) => {
+window.setAccountData = (accountsData, portalsData = null, selectedType = null) => {
   console.log('window.setAccountData called');
-  accountManager.setAccountData(accountsData, portalsData);
+  accountManager.setAccountData(accountsData, portalsData, selectedType);
 };
 
 window.getAccountData = () => {
@@ -622,7 +856,7 @@ window.loadTestData = () => {
 
 // Keep the object notation as well for compatibility
 window.AccountListInterface = {
-  setData: window.setAccountData,
+  setData: (accountsData, portalsData = null, selectedType = null) => window.setAccountData(accountsData, portalsData, selectedType),
   getData: window.getAccountData,
   clearSearch: window.clearAccountSearch,
   setFilter: window.setAccountFilter,
