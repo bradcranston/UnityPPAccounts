@@ -1,4 +1,7 @@
 // Account List Interface for FileMaker WebViewer
+import { PriceManager } from './prices.js';
+import { ReportManager } from './report.js';
+import { LocationManager } from './locations.js';
 class AccountListManager {
   constructor() {
     this.accounts = [];
@@ -11,8 +14,19 @@ class AccountListManager {
     this.searchTerm = '';
     this.filterType = 'all';
     this.portalSearchTerm = '';
-    this.currentAccountType = 'Individual'; // 'Individual' or 'Group'
+    this.currentAccountType = 'Individual'; // 'Individual', 'Group' or 'Log'
+    this.lastAccountType = 'Individual'; // last non-Log tab, for the Add Account modal
     this.isAddingAccount = false; // Flag to prevent duplicate additions
+
+    // --- Log tab state ---
+    this.logRows = [];
+    this.logTotal = 0;
+    this.logLoaded = false;
+    this.logBusy = false;
+    this.logPageSize = 200;
+    this.logFilters = { search: '', status: 'all', account: 'all' };
+    this.logExpanded = new Set();
+    this.logSearchTimer = null;
     
     // Separate filter states for each account type
     this.individualFilters = {
@@ -28,6 +42,9 @@ class AccountListManager {
     this.attachEventListeners();
     this.attachAccountEventListeners();
     this.attachModalEventListeners();
+    this.prices = new PriceManager(this);
+    this.report = new ReportManager(this);
+    this.locations = new LocationManager(this);
     this.loadInitialData();
     
     // Set initial container mode
@@ -51,6 +68,44 @@ class AccountListManager {
     this.individualTab = document.getElementById('individualTab');
     this.groupTab = document.getElementById('groupTab');
     this.clearFiltersBtn = document.getElementById('clearFiltersBtn');
+
+    // panels + stats
+    this.accountsPanel = document.getElementById('accountsPanel');
+    this.logPanel = document.getElementById('logPanel');
+    this.accountStats = document.getElementById('accountStats');
+    this.logStats = document.getElementById('logStats');
+
+    // log tab
+    this.logTab = document.getElementById('logTab');
+    this.pricesTab = document.getElementById('pricesTab');
+    this.reportTab = document.getElementById('reportTab');
+    this.reportPanel = document.getElementById('reportPanel');
+    this.reportStats = document.getElementById('reportStats');
+    this.pricesPanel = document.getElementById('pricesPanel');
+    this.priceStats = document.getElementById('priceStats');
+    this.locationsTab = document.getElementById('locationsTab');
+    this.locationsPanel = document.getElementById('locationsPanel');
+    this.locationStats = document.getElementById('locationStats');
+    this.logBody = document.getElementById('logBody');
+    this.logSearchInput = document.getElementById('logSearchInput');
+    this.logStatusSelect = document.getElementById('logStatusSelect');
+    this.logAccountSelect = document.getElementById('logAccountSelect');
+    this.logRefreshBtn = document.getElementById('logRefreshBtn');
+    this.logClearBtn = document.getElementById('logClearBtn');
+    this.logMoreBtn = document.getElementById('logMoreBtn');
+    this.logShown = document.getElementById('logShown');
+    this.logTotalEl = document.getElementById('logTotal');
+    this.logNote = document.getElementById('logNote');
+
+    // manual add
+    this.manualNumber = document.getElementById('manualNumber');
+    this.manualName = document.getElementById('manualName');
+    this.manualPrefix = document.getElementById('manualPrefix');
+    this.manualAddBtn = document.getElementById('manualAddBtn');
+    this.manualPreview = document.getElementById('manualPreview');
+    this.manualError = document.getElementById('manualError');
+
+    this.toastEl = document.getElementById('toast');
   }
 
   attachEventListeners() {
@@ -82,6 +137,25 @@ class AccountListManager {
     this.clearFiltersBtn.addEventListener('click', () => {
       this.clearFilters();
     });
+
+    this.logTab.addEventListener('click', () => {
+      this.switchToAccountType('Log');
+    });
+
+    this.pricesTab.addEventListener('click', () => {
+      this.switchToAccountType('Prices');
+    });
+
+    this.reportTab.addEventListener('click', () => {
+      this.switchToAccountType('Report');
+    });
+
+    this.locationsTab.addEventListener('click', () => {
+      this.switchToAccountType('Locations');
+    });
+
+    this.attachLogEventListeners();
+    this.attachManualAddEventListeners();
   }
 
   attachModalEventListeners() {
@@ -270,45 +344,91 @@ class AccountListManager {
   }
 
   switchToAccountType(type) {
-    console.log('=== SWITCHING TO ACCOUNT TYPE:', type, '===');
-    console.log('Previous type was:', this.currentAccountType);
-    
-    // Save current filter state before switching
-    this.saveCurrentFilterState();
-    
-    // Switch account type
+    console.log('=== SWITCHING TO TAB:', type, '(was', this.currentAccountType + ') ===');
+
+    // Only the account tabs carry search/filter state
+    if (['Log', 'Prices', 'Report', 'Locations'].indexOf(this.currentAccountType) < 0) {
+      this.saveCurrentFilterState();
+      this.lastAccountType = this.currentAccountType;
+    }
+
     this.currentAccountType = type;
-    
-    // Restore filter state for new type
-    this.restoreFilterState();
-    
-    console.log('Filter values after restore - Search:', `"${this.searchTerm}"`, 'Filter:', this.filterType);
-    
     this.updateTabStyles();
+
+    if (type === 'Prices') {
+      this.showPanel('prices');
+      this.prices.onShow();
+      return;
+    }
+
+    if (type === 'Locations') {
+      this.showPanel('locations');
+      this.locations.onShow();
+      return;
+    }
+
+    if (type === 'Report') {
+      this.showPanel('report');
+      this.report.onShow();
+      return;
+    }
+
+    if (type === 'Log') {
+      this.showPanel('log');
+      if (!this.logLoaded) {
+        this.requestLogPage(0);
+      } else {
+        this.renderLog();
+      }
+      console.log('=== SWITCH COMPLETE ===');
+      return;
+    }
+
+    this.showPanel('accounts');
+    this.restoreFilterState();
     this.updateCurrentAccountsList();
-    
-    console.log('About to filter and render...');
     this.filterAndRenderAccounts();
     this.updateStats();
-    
+
     console.log('=== SWITCH COMPLETE ===');
   }
 
+  showPanel(which) {
+    const isLog = which === 'log';
+    const isPrices = which === 'prices';
+    const isReport = which === 'report';
+    const isLocations = which === 'locations';
+    const isAccounts = !isLog && !isPrices && !isReport && !isLocations;
+    this.accountsPanel.hidden = !isAccounts;
+    this.logPanel.hidden = !isLog;
+    this.pricesPanel.hidden = !isPrices;
+    this.reportPanel.hidden = !isReport;
+    this.locationsPanel.hidden = !isLocations;
+    this.accountStats.hidden = !isAccounts;
+    this.logStats.hidden = !isLog;
+    this.priceStats.hidden = !isPrices;
+    this.reportStats.hidden = !isReport;
+    this.locationStats.hidden = !isLocations;
+  }
+
   updateTabStyles() {
-    // Remove active class from all tabs
-    this.individualTab.classList.remove('active');
-    this.groupTab.classList.remove('active');
-    
-    // Add active class to current tab
-    if (this.currentAccountType === 'Individual') {
-      this.individualTab.classList.add('active');
-    } else {
-      this.groupTab.classList.add('active');
-    }
-    
-    // Update container background to reflect current type
+    const tabs = {
+      Individual: this.individualTab,
+      Group: this.groupTab,
+      Log: this.logTab,
+      Prices: this.pricesTab,
+      Report: this.reportTab,
+      Locations: this.locationsTab
+    };
+
+    Object.keys(tabs).forEach((key) => {
+      if (!tabs[key]) return;
+      tabs[key].classList.toggle('active', key === this.currentAccountType);
+    });
+
+    const modes = { Individual: 'individual-mode', Group: 'group-mode', Log: 'log-mode', Prices: 'prices-mode', Report: 'report-mode', Locations: 'prices-mode' };
     const container = document.querySelector('.container');
-    container.className = 'container ' + (this.currentAccountType === 'Individual' ? 'individual-mode' : 'group-mode');
+    container.className = 'container ' + (modes[this.currentAccountType] || 'individual-mode');
   }
 
   filterAndRenderAccounts() {
@@ -333,7 +453,8 @@ class AccountListManager {
       // Search filter
       const nameMatch = account.Name?.toLowerCase().includes(this.searchTerm);
       const numberMatch = account.AccountNumber?.toString().includes(this.searchTerm);
-      const matchesSearch = this.searchTerm === '' || nameMatch || numberMatch;
+      const prefixMatch = (account.TrackingPrefix || '').toLowerCase().includes(this.searchTerm);
+      const matchesSearch = this.searchTerm === '' || nameMatch || numberMatch || prefixMatch;
 
       // Status filter
       const isActive = account.fActive === 1;
@@ -384,25 +505,35 @@ class AccountListManager {
     const isActive = account.fActive === 1;
     
     return `
-      <div class="account-item ${isActive ? 'active' : 'inactive'}" data-id="${account.__ID}">
+      <div class="account-item ${isActive ? 'active' : 'inactive'}" data-id="${this.escapeHtml(account.__ID)}">
         <div class="account-info">
-          <div class="account-name">${account.Name}</div>
+          <div class="account-name">${this.escapeHtml(account.Name)}</div>
           <div class="account-details">
-            <span class="account-number">#${account.AccountNumber}</span>
+            <span class="account-number">#${this.escapeHtml(account.AccountNumber)}</span>
+            <span class="account-prefix" title="Orders that arrive with no portal are matched to this account when their tracking number starts with this text. Separate more than one with commas.">
+              <span class="account-prefix-label">Tracking prefix</span>
+              <input type="text" class="prefix-input" autocomplete="off" spellcheck="false" readonly tabindex="-1"
+                     data-id="${this.escapeHtml(account.__ID)}"
+                     value="${this.escapeHtml(account.TrackingPrefix || '')}"
+                     placeholder="none" />
+              <button type="button" class="prefix-btn prefix-edit" data-id="${this.escapeHtml(account.__ID)}">Edit</button>
+              <button type="button" class="prefix-btn prefix-save" data-id="${this.escapeHtml(account.__ID)}">Save</button>
+              <button type="button" class="prefix-btn prefix-cancel" data-id="${this.escapeHtml(account.__ID)}">Cancel</button>
+            </span>
           </div>
         </div>
         
         <div class="account-actions">
           <button 
             class="toggle-button ${isActive ? 'active' : 'inactive'}" 
-            data-id="${account.__ID}"
+            data-id="${this.escapeHtml(account.__ID)}"
             data-action="toggle-status"
           >
             ${isActive ? 'Deactivate' : 'Activate'}
           </button>
           <button 
             class="delete-button" 
-            data-id="${account.__ID}"
+            data-id="${this.escapeHtml(account.__ID)}"
             data-action="delete"
             title="Delete Account"
           >
@@ -414,6 +545,23 @@ class AccountListManager {
   }
 
   attachAccountEventListeners() {
+    // Tracking prefix: read-only until Edit is clicked, then Save / Cancel
+    // (Enter / Esc). Clicking away does nothing, so nothing saves by accident.
+    this.accountList.addEventListener('click', (e) => {
+      const btn = e.target.closest('.prefix-btn');
+      if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      if (btn.classList.contains('prefix-edit')) this.startPrefixEdit(id);
+      else if (btn.classList.contains('prefix-save')) this.savePrefix(id);
+      else if (btn.classList.contains('prefix-cancel')) this.endPrefixEdit(id, true);
+    });
+    this.accountList.addEventListener('keydown', (e) => {
+      if (!e.target.classList.contains('prefix-input') || e.target.readOnly) return;
+      const id = e.target.getAttribute('data-id');
+      if (e.key === 'Enter') { e.preventDefault(); this.savePrefix(id); }
+      if (e.key === 'Escape') { e.preventDefault(); this.endPrefixEdit(id, true); }
+    });
+
     // Set up event delegation - this will work for all current and future buttons
     this.accountList.addEventListener('click', (e) => {
       if (e.target.classList.contains('toggle-button')) {
@@ -442,6 +590,144 @@ class AccountListManager {
         }
       }
     });
+  }
+
+  // =========================================================================
+  // Tracking prefix
+  // =========================================================================
+
+  // "eaton ,  EATON2;x" -> "eaton, EATON2, x". Spaces are not allowed inside a
+  // prefix, so they act as separators too. FileMaker normalizes the same way.
+  normalizePrefix(value) {
+    const seen = new Set();
+    return String(value || '')
+      .split(/[\s,;]+/)
+      .map((p) => p.trim())
+      .filter((p) => {
+        if (!p || seen.has(p.toUpperCase())) return false;
+        seen.add(p.toUpperCase());
+        return true;
+      })
+      .join(', ');
+  }
+
+  // Exact (case-insensitive) prefixes already on another account, as
+  // "EATON is already on Eaton (PrintSmith Account #21489)". A shorter prefix
+  // that merely overlaps a longer one is allowed — the longest match wins.
+  prefixClashes(prefix, exceptId) {
+    const mine = prefix ? prefix.split(', ').map((p) => p.toUpperCase()) : [];
+    const out = [];
+    if (!mine.length) return out;
+    this.accounts.forEach((a) => {
+      if (exceptId !== null && String(a.__ID) === String(exceptId)) return;
+      const theirs = this.normalizePrefix(a.TrackingPrefix).split(', ').filter(Boolean);
+      theirs.forEach((p) => {
+        if (mine.indexOf(p.toUpperCase()) >= 0) out.push(p + ' is already on ' + a.Name);
+      });
+    });
+    return out;
+  }
+
+  prefixElements(accountId) {
+    const sel = '[data-id="' + String(accountId).replace(/"/g, '\\"') + '"]';
+    const input = this.accountList.querySelector('.prefix-input' + sel);
+    return { input, wrap: input ? input.closest('.account-prefix') : null };
+  }
+
+  startPrefixEdit(accountId) {
+    const { input, wrap } = this.prefixElements(accountId);
+    if (!input || input.classList.contains('saving')) return;
+    wrap.classList.add('editing');
+    input.readOnly = false;
+    input.removeAttribute('tabindex');
+    input.focus();
+    input.select();
+  }
+
+  // Leave edit mode; with revert, put back the saved value.
+  endPrefixEdit(accountId, revert) {
+    const { input, wrap } = this.prefixElements(accountId);
+    if (!input) return;
+    if (revert) {
+      const acc = this.accounts.find((a) => String(a.__ID) === String(accountId));
+      input.value = (acc && acc.TrackingPrefix) || '';
+    }
+    wrap.classList.remove('editing');
+    input.readOnly = true;
+    input.setAttribute('tabindex', '-1');
+    input.blur();
+  }
+
+  savePrefix(accountId) {
+    const account = this.accounts.find((a) => String(a.__ID) === String(accountId));
+    const { input } = this.prefixElements(accountId);
+    if (!account || !input) return;
+
+    const previous = account.TrackingPrefix || '';
+    const prefix = this.normalizePrefix(input.value);
+    input.value = prefix;
+    if (prefix === this.normalizePrefix(previous)) {
+      this.endPrefixEdit(accountId, true);
+      return;
+    }
+
+    // stay in edit mode so the typo can be fixed
+    const clashes = this.prefixClashes(prefix, accountId);
+    if (clashes.length) {
+      this.showToast(clashes.join('. ') + '.', 'error');
+      input.focus();
+      return;
+    }
+
+    this.endPrefixEdit(accountId, false);
+
+    account.TrackingPrefix = prefix;
+    const current = (this.currentAccounts || []).find((a) => String(a.__ID) === String(accountId));
+    if (current && current !== account) current.TrackingPrefix = prefix;
+    this.prefixPending = this.prefixPending || {};
+    this.prefixPending[accountId] = previous;
+    input.classList.add('saving');
+
+    this.callFileMakerScript('Manage: Accounts', JSON.stringify({
+      mode: 'setPrefix',
+      __ID: accountId,
+      TrackingPrefix: prefix
+    }));
+  }
+
+  setPrefixResult(data) {
+    let parsed = data;
+    if (typeof parsed === 'string') {
+      try { parsed = JSON.parse(parsed); } catch (err) { parsed = null; }
+    }
+    if (!parsed || !parsed.__ID) return;
+
+    const id = String(parsed.__ID);
+    const pending = this.prefixPending || {};
+    const previous = pending[id];
+    delete pending[id];
+
+    const account = this.accounts.find((a) => String(a.__ID) === id);
+    const current = (this.currentAccounts || []).find((a) => String(a.__ID) === id);
+
+    if (parsed.ok) {
+      const saved = parsed.TrackingPrefix || '';
+      if (account) account.TrackingPrefix = saved;
+      if (current) current.TrackingPrefix = saved;
+      this.showToast(saved ? 'Tracking prefix saved: ' + saved : 'Tracking prefix cleared.', 'ok');
+    } else {
+      if (previous !== undefined) {
+        if (account) account.TrackingPrefix = previous;
+        if (current) current.TrackingPrefix = previous;
+      }
+      this.showToast(parsed.errors || 'The tracking prefix was not saved.', 'error');
+    }
+
+    const { input } = this.prefixElements(id);
+    if (input) {
+      input.classList.remove('saving');
+      if (input.readOnly && account) input.value = account.TrackingPrefix || '';
+    }
   }
 
   updateAccountStatus(accountId, newStatus) {
@@ -562,6 +848,7 @@ class AccountListManager {
     this.portalSearchInput.value = '';
     this.portalSearchTerm = '';
     this.isAddingAccount = false; // Reset flag when modal is closed
+    this.resetManualForm();
   }
 
   updateAvailablePortals() {
@@ -647,14 +934,16 @@ class AccountListManager {
 
   createPortalHTML(portal) {
     const portalNumber = portal.number ? `Account #${portal.number}` : 'No Account Number';
-    
+    // Portal names come straight out of webhook JSON, so they can contain & < > "
+    const payload = this.escapeHtml(JSON.stringify(portal));
+
     return `
-      <div class="portal-item" data-portal='${JSON.stringify(portal).replace(/'/g, "&apos;")}'>
+      <div class="portal-item" data-portal='${payload}'>
         <div class="portal-info">
-          <div class="portal-name">${portal.portal}</div>
-          <div class="portal-number">${portalNumber}</div>
+          <div class="portal-name">${this.escapeHtml(portal.portal)}</div>
+          <div class="portal-number">${this.escapeHtml(portalNumber)}</div>
         </div>
-        <button class="add-portal-btn" data-portal='${JSON.stringify(portal).replace(/'/g, "&apos;")}'>
+        <button class="add-portal-btn" data-portal='${payload}'>
           Add Account
         </button>
       </div>
@@ -795,6 +1084,467 @@ class AccountListManager {
     this.filterType = filterType;
     this.filterAndRenderAccounts();
   }
+
+  // =========================================================================
+  // Shared helpers
+  // =========================================================================
+
+  escapeHtml(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  showToast(message, kind) {
+    if (!this.toastEl) return;
+    this.toastEl.textContent = message;
+    this.toastEl.className = 'toast' + (kind ? ' toast-' + kind : '');
+    this.toastEl.hidden = false;
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => {
+      this.toastEl.hidden = true;
+    }, kind === 'error' ? 8000 : 4000);
+  }
+
+  formatMoney(value) {
+    if (value === null || value === undefined || value === '') return '';
+    const n = Number(value);
+    if (isNaN(n)) return '';
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  formatStamp(value) {
+    if (!value) return '';
+    const d = new Date(String(value).replace(' ', 'T'));
+    if (isNaN(d.getTime())) return String(value);
+    return d.toLocaleString('en-US', {
+      month: 'numeric', day: 'numeric', year: '2-digit',
+      hour: 'numeric', minute: '2-digit'
+    });
+  }
+
+  // "Stage Right (PrintSmith Account #13048)" -> "Stage Right"
+  // The parenthetical is not always last — plenty of live portals read
+  // "... (PrintSmith Account #8791) (ACTIVE)" — so this is deliberately not
+  // anchored to the end. Any trailing "(ACTIVE)" is KEPT: portals that differ
+  // only by that suffix are genuinely different portals on the same account,
+  // and collapsing them would make two rows look identical.
+  shortPortal(portal) {
+    if (!portal) return '';
+    return String(portal).replace(/\s*\(PrintSmith Account\s*#\d+\s*\)/i, ' ').replace(/\s+/g, ' ').trim()
+      || String(portal);
+  }
+
+  // =========================================================================
+  // Manual account entry
+  // =========================================================================
+
+  attachManualAddEventListeners() {
+    if (!this.manualAddBtn) return;
+
+    this.manualNumber.addEventListener('input', (e) => {
+      e.target.value = e.target.value.replace(/[^0-9]/g, '');
+      this.updateManualPreview();
+    });
+
+    this.manualName.addEventListener('input', () => this.updateManualPreview());
+
+    this.manualAddBtn.addEventListener('click', () => this.submitManualAccount());
+
+    if (this.manualPrefix) {
+      this.manualPrefix.addEventListener('input', () => { this.manualError.hidden = true; });
+    }
+
+    [this.manualNumber, this.manualName, this.manualPrefix].filter(Boolean).forEach((el) => {
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.submitManualAccount();
+        }
+      });
+    });
+  }
+
+  composeAccountName(name, number) {
+    const trimmed = (name || '').trim();
+    if (!trimmed || !number) return trimmed;
+    if (trimmed.indexOf('#' + number) !== -1) return trimmed;
+    return trimmed + ' (PrintSmith Account #' + number + ')';
+  }
+
+  updateManualPreview() {
+    const number = (this.manualNumber.value || '').trim();
+    const name = (this.manualName.value || '').trim();
+
+    this.manualError.hidden = true;
+
+    if (!number || !name) {
+      this.manualPreview.hidden = true;
+      return;
+    }
+
+    this.manualPreview.innerHTML =
+      'Saves as <strong>' + this.escapeHtml(this.composeAccountName(name, number)) + '</strong>';
+    this.manualPreview.hidden = false;
+  }
+
+  manualErrorMessage(text) {
+    this.manualError.textContent = text;
+    this.manualError.hidden = false;
+    this.manualPreview.hidden = true;
+  }
+
+  submitManualAccount() {
+    if (this.isAddingAccount) return;
+
+    const number = (this.manualNumber.value || '').trim();
+    const name = (this.manualName.value || '').trim();
+
+    if (!number) return this.manualErrorMessage('Enter the PrintSmith account number.');
+    if (!name) return this.manualErrorMessage('Enter the account name.');
+
+    const clash = this.accounts.find(
+      (a) => a.AccountNumber !== null &&
+             a.AccountNumber !== undefined &&
+             String(a.AccountNumber).trim() === number
+    );
+    if (clash) {
+      return this.manualErrorMessage(
+        'Account #' + number + ' already exists as "' + clash.Name + '" (' + clash.Type + ').'
+      );
+    }
+
+    const prefix = this.normalizePrefix(this.manualPrefix ? this.manualPrefix.value : '');
+    const prefixClashes = this.prefixClashes(prefix, null);
+    if (prefixClashes.length) return this.manualErrorMessage(prefixClashes.join('. ') + '.');
+
+    const type = (['Log', 'Prices', 'Report', 'Locations'].indexOf(this.currentAccountType) >= 0) ? this.lastAccountType : this.currentAccountType;
+    const composed = this.composeAccountName(name, number);
+
+    this.isAddingAccount = true;
+
+    this.callFileMakerScript('Manage: Accounts', JSON.stringify({
+      mode: 'addManual',
+      AccountNumber: number,
+      Name: name,
+      TrackingPrefix: prefix,
+      Type: type
+    }));
+
+    this.hideAddAccountModal();
+    this.showToast('Adding ' + composed + '...');
+
+    setTimeout(() => { this.isAddingAccount = false; }, 1500);
+  }
+
+  resetManualForm() {
+    if (!this.manualNumber) return;
+    this.manualNumber.value = '';
+    this.manualName.value = '';
+    if (this.manualPrefix) this.manualPrefix.value = '';
+    this.manualPreview.hidden = true;
+    this.manualError.hidden = true;
+  }
+
+  // =========================================================================
+  // Log tab
+  // =========================================================================
+
+  attachLogEventListeners() {
+    if (!this.logBody) return;
+
+    this.logSearchInput.addEventListener('input', (e) => {
+      this.logFilters.search = e.target.value.trim();
+      clearTimeout(this.logSearchTimer);
+      this.logSearchTimer = setTimeout(() => this.requestLogPage(0), 400);
+    });
+
+    this.logSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        clearTimeout(this.logSearchTimer);
+        this.logFilters.search = e.target.value.trim();
+        this.requestLogPage(0);
+      }
+    });
+
+    this.logStatusSelect.addEventListener('change', (e) => {
+      this.logFilters.status = e.target.value;
+      this.requestLogPage(0);
+    });
+
+    this.logAccountSelect.addEventListener('change', (e) => {
+      this.logFilters.account = e.target.value;
+      this.requestLogPage(0);
+    });
+
+    this.logRefreshBtn.addEventListener('click', () => this.requestLogPage(0));
+
+    this.logClearBtn.addEventListener('click', () => {
+      this.logSearchInput.value = '';
+      this.logStatusSelect.value = 'all';
+      this.logAccountSelect.value = 'all';
+      this.logFilters = { search: '', status: 'all', account: 'all' };
+      this.requestLogPage(0);
+    });
+
+    this.logMoreBtn.addEventListener('click', () => this.requestLogPage(this.logRows.length));
+
+    // one delegated handler for re-run buttons and row expansion
+    this.logBody.addEventListener('click', (e) => {
+      const rerun = e.target.closest('.rerun-btn');
+      if (rerun) {
+        e.stopPropagation();
+        this.rerunLogRow(rerun.getAttribute('data-id'));
+        return;
+      }
+      const row = e.target.closest('.log-row');
+      if (row) this.toggleLogDetail(row.getAttribute('data-id'));
+    });
+  }
+
+  requestLogPage(skip) {
+    if (this.logBusy) {
+      console.log('Log request already in flight, ignoring');
+      return;
+    }
+    this.logBusy = true;
+    this.logMoreBtn.disabled = true;
+
+    if (skip === 0) {
+      this.logExpanded.clear();
+      this.renderLogMessage('Loading...', true);
+    } else {
+      this.logNote.textContent = 'Loading more...';
+    }
+
+    this.callFileMakerScript('Manage: Accounts', JSON.stringify({
+      mode: 'logLoad',
+      top: this.logPageSize,
+      skip: skip,
+      search: this.logFilters.search,
+      status: this.logFilters.status,
+      account: this.logFilters.account
+    }));
+  }
+
+  setLogData(resultData, metaData) {
+    this.logBusy = false;
+    this.logLoaded = true;
+    this.logMoreBtn.disabled = false;
+
+    let parsed = resultData;
+    let meta = metaData;
+
+    if (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch (err) {
+        console.error('Failed to parse log JSON:', err);
+        this.renderLogMessage('The server did not return readable data. Check the OData query.');
+        return;
+      }
+    }
+    if (typeof meta === 'string') {
+      try { meta = JSON.parse(meta); } catch (err) { meta = {}; }
+    }
+    meta = meta || {};
+
+    // ExecuteSQL failures don't come back shaped like an OData error, so the
+    // script reports them in meta.sqlError. Without this a failed query looks
+    // identical to "no rows matched", which is the worst possible lie.
+    if (meta.sqlError) {
+      console.error('Log query failed:', meta.sqlError);
+      this.renderLogMessage(meta.sqlError);
+      return;
+    }
+
+    if (parsed && parsed.error) {
+      const msg = (parsed.error.message) || 'The server returned an error.';
+      console.error('Log query error:', parsed.error);
+      this.renderLogMessage(msg);
+      return;
+    }
+
+    const rows = Array.isArray(parsed) ? parsed : (parsed && parsed.value) || [];
+    const total = parsed && parsed['@odata.count'];
+
+    if (Number(meta.skip) > 0) {
+      const seen = new Set(this.logRows.map((r) => String(r.idText)));
+      rows.forEach((r) => {
+        if (!seen.has(String(r.idText))) this.logRows.push(r);
+      });
+    } else {
+      this.logRows = rows;
+    }
+
+    this.logTotal = (total === undefined || total === null) ? this.logRows.length : Number(total);
+    this.renderLog();
+  }
+
+  renderLogMessage(message, muted) {
+    this.logBody.innerHTML =
+      '<tr class="log-empty-row"><td colspan="8"><div class="empty-state' +
+      (muted ? ' empty-state-muted' : '') + '"><h3>' + this.escapeHtml(message) + '</h3></div></td></tr>';
+    this.logMoreBtn.hidden = true;
+    this.logNote.textContent = '';
+    this.logShown.textContent = '0';
+    this.logTotalEl.textContent = '0';
+  }
+
+  isOnActiveAccount(row) {
+    const number = (row.number === null || row.number === undefined) ? '' : String(row.number).trim();
+    const portal = (row.portal || '').trim().toLowerCase();
+
+    return this.accounts.some((account) => {
+      if (account.fActive !== 1) return false;
+      const accountNumber = (account.AccountNumber === null || account.AccountNumber === undefined)
+        ? '' : String(account.AccountNumber).trim();
+      if (number && accountNumber && number === accountNumber) return true;
+      return portal !== '' && (account.Name || '').trim().toLowerCase() === portal;
+    });
+  }
+
+  statusClass(status) {
+    const s = (status || '').toLowerCase();
+    if (s === '') return 'st-none';
+    if (s === 'new') return 'st-new';
+    if (s === 'sent') return 'st-sent';
+    if (s === 'error') return 'st-error';
+    if (s === 'timed out') return 'st-warn';
+    if (s === 'manual') return 'st-manual';
+    if (s === 'no active account') return 'st-warn';
+    if (s.indexOf('skipped') === 0) return 'st-skip';
+    return 'st-other';
+  }
+
+  renderLog() {
+    if (!this.logRows.length) {
+      this.renderLogMessage('No log entries match these filters.', true);
+      return;
+    }
+
+    const html = this.logRows.map((row) => this.createLogRowHTML(row)).join('');
+    this.logBody.innerHTML = html;
+
+    this.logShown.textContent = String(this.logRows.length);
+    this.logTotalEl.textContent = String(this.logTotal);
+
+    const more = this.logTotal > this.logRows.length;
+    this.logMoreBtn.hidden = !more;
+    this.logMoreBtn.textContent = 'Load ' + Math.min(this.logPageSize, this.logTotal - this.logRows.length) + ' more';
+    this.logNote.textContent = more ? '' : 'End of the list.';
+  }
+
+  createLogRowHTML(row) {
+    const id = this.escapeHtml(row.idText);
+    const active = this.isOnActiveAccount(row);
+    const status = row.status || '';
+    const expanded = this.logExpanded.has(String(row.idText));
+
+    const accountCell =
+      '<div class="acct-name" title="' + this.escapeHtml(row.portal || '') + '">' +
+        this.escapeHtml(this.shortPortal(row.portal) || '(no portal)') + '</div>' +
+      '<div class="acct-sub">' +
+        (row.number ? '#' + this.escapeHtml(row.number) + ' ' : '') +
+        '<span class="pill ' + (active ? 'pill-on' : 'pill-off') + '">' +
+          (active ? 'Active account' : 'No active account') +
+        '</span>' +
+      '</div>';
+
+    const customerCell =
+      '<div title="' + this.escapeHtml(row.customerName || '') + '">' +
+        this.escapeHtml(row.customerName || '') + '</div>' +
+      (row.customerEmail
+        ? '<div class="muted" title="' + this.escapeHtml(row.customerEmail) + '">' +
+            this.escapeHtml(row.customerEmail) + '</div>'
+        : '');
+
+    const main =
+      '<tr class="log-row' + (expanded ? ' is-open' : '') + '" data-id="' + id + '">' +
+        '<td class="col-date">' + this.escapeHtml(this.formatStamp(row.zzCreatedTimestamp)) + '</td>' +
+        '<td class="col-order"><span class="order-no" title="' + this.escapeHtml(row.orderNumber || '') + '">' +
+          this.escapeHtml(row.orderNumber || '—') + '</span></td>' +
+        '<td class="col-account">' + accountCell + '</td>' +
+        '<td class="col-customer">' + customerCell + '</td>' +
+        '<td class="col-num">' + this.escapeHtml(row.itemCount || '') + '</td>' +
+        '<td class="col-num">' + this.escapeHtml(this.formatMoney(row.orderAmount)) + '</td>' +
+        '<td class="col-status"><span class="status-pill ' + this.statusClass(status) + '">' +
+          this.escapeHtml(status || 'cleared') + '</span></td>' +
+        '<td class="col-action">' +
+          '<button class="rerun-btn" data-id="' + id + '" title="Send this order to PrintSmith again">Re-run</button>' +
+        '</td>' +
+      '</tr>';
+
+    if (!expanded) return main;
+
+    const titles = (row.itemTitles || '').split(/\r\n|\r|\n/).filter(Boolean);
+    const detail =
+      '<tr class="log-detail"><td colspan="8">' +
+        '<div class="detail-grid">' +
+          '<div><span class="detail-label">Portal</span>' + this.escapeHtml(row.portal || '—') + '</div>' +
+          '<div><span class="detail-label">Order date</span>' + this.escapeHtml(this.formatStamp(row.orderDate)) + '</div>' +
+          '<div><span class="detail-label">Routed as</span>' + this.escapeHtml(row.type || '—') + '</div>' +
+          '<div><span class="detail-label">Record</span><code>' + id + '</code></div>' +
+        '</div>' +
+        (titles.length
+          ? '<div class="detail-items"><span class="detail-label">Items</span><ul>' +
+              titles.map((t) => '<li>' + this.escapeHtml(t) + '</li>').join('') +
+            '</ul></div>'
+          : '') +
+      '</td></tr>';
+
+    return main + detail;
+  }
+
+  toggleLogDetail(id) {
+    const key = String(id);
+    if (this.logExpanded.has(key)) this.logExpanded.delete(key);
+    else this.logExpanded.add(key);
+    this.renderLog();
+  }
+
+  rerunLogRow(id) {
+    const row = this.logRows.find((r) => String(r.idText) === String(id));
+    if (!row) {
+      console.warn('Re-run requested for unknown row', id);
+      return;
+    }
+
+    const label = [
+      row.orderNumber ? 'Order ' + row.orderNumber : '(no order number)',
+      row.portal || '(no portal)',
+      row.customerName || ''
+    ].filter(Boolean).join('\n');
+
+    this.callFileMakerScript('Manage: Accounts', JSON.stringify({
+      mode: 'rerun',
+      idText: String(row.idText),
+      label: label,
+      status: row.status || ''
+    }));
+  }
+
+  setRerunResult(data) {
+    let parsed = data;
+    if (typeof parsed === 'string') {
+      try { parsed = JSON.parse(parsed); } catch (err) { parsed = null; }
+    }
+    if (!parsed || !parsed.idText) return;
+
+    const row = this.logRows.find((r) => String(r.idText) === String(parsed.idText));
+    if (row) row.status = parsed.status || '';
+
+    this.renderLog();
+
+    const status = (parsed.status || '').toLowerCase();
+    if (status === 'sent') this.showToast('Re-run complete — sent to PrintSmith.', 'ok');
+    else if (status === 'error') this.showToast('Re-run failed. The record holds the API response.', 'error');
+    else this.showToast('Re-run finished with status: ' + (parsed.status || '(none)'), 'error');
+  }
 }
 
 // Initialize the account list manager
@@ -824,6 +1574,46 @@ window.getFilteredAccounts = () => {
 
 window.setFileMakerCallback = (callback) => {
   window.FileMakerCallback = callback;
+};
+
+// --- Log tab: called by "Manage: Accounts" ---
+window.setLogData = (resultData, metaData) => {
+  console.log('window.setLogData called');
+  accountManager.setLogData(resultData, metaData);
+};
+
+window.setReportData = (rowsData, metaData) => {
+  accountManager.report.setData(rowsData, metaData);
+};
+
+window.setReportResult = (data) => {
+  accountManager.report.setResult(data);
+};
+
+window.setPriceData = (rowsData, metaData) => {
+  accountManager.prices.setData(rowsData, metaData);
+};
+
+window.setPriceResult = (data) => {
+  accountManager.prices.setResult(data);
+};
+
+window.setLocationData = (locationsData, ordersData, metaData) => {
+  accountManager.locations.setData(locationsData, ordersData, metaData);
+};
+
+window.setLocationResult = (data) => {
+  accountManager.locations.setResult(data);
+};
+
+window.setPrefixResult = (data) => {
+  console.log('window.setPrefixResult called');
+  accountManager.setPrefixResult(data);
+};
+
+window.setRerunResult = (data) => {
+  console.log('window.setRerunResult called');
+  accountManager.setRerunResult(data);
 };
 
 // Test function to load sample data

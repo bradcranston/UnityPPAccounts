@@ -1,0 +1,38 @@
+<fmxmlsnippet type="FMObjectList"><Step enable="True" id="125" name="Else If"><Restore state="False"/><Calculation><![CDATA[$mode = "reportLoad"]]></Calculation></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/><Text>FCB Report tab: one page of the month&#x27;s FCB orders, raw, for the widget to shape. 9/22/26 bc</Text></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/><Text>Filtered on zzCreatedTimestamp (server local), which is the store&#x27;s local order time to the minute.</Text></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/><Text>messageClean is bulky, so the widget pages through 40 at a time.</Text></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[JSONGetElement ( $param ; "month" )]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$rMonth</Name></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[Max ( 0 ; GetAsNumber ( JSONGetElement ( $param ; "skip" ) ) )]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$rSkip</Name></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[Let ( ~t = GetAsNumber ( JSONGetElement ( $param ; "top" ) ) ; If ( ~t > 0 ; Min ( ~t ; 100 ) ; 40 ) )]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$rTop</Name></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[Let ( [
+  ~y = GetAsNumber ( Left ( $rMonth ; 4 ) ) ;
+  ~m = GetAsNumber ( Right ( $rMonth ; 2 ) ) ;
+  ~y2 = If ( ~m = 12 ; ~y + 1 ; ~y ) ;
+  ~m2 = If ( ~m = 12 ; 1 ; ~m + 1 ) ;
+  ~pad = "00"
+] ;
+  ~y & "-" & Right ( ~pad & ~m ; 2 ) & "-01 00:00:00" & ¶ &
+  ~y2 & "-" & Right ( ~pad & ~m2 ; 2 ) & "-01 00:00:00"
+)]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$rRange</Name></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[" from \"PrinterPresence\" where \"number\" = 22860 and \"zzCreatedTimestamp\" >= TIMESTAMP '" & GetValue ( $rRange ; 1 ) & "' and \"zzCreatedTimestamp\" < TIMESTAMP '" & GetValue ( $rRange ; 2 ) & "'"]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$rWhere</Name></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[GetAsNumber ( ExecuteSQL ( "select count(*)" & $rWhere ; "" ; "" ) )]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$rTotal</Name></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA["select \"orderNumber\", \"orderDate\", \"zzCreatedTimestamp\", \"customerName\", \"messageClean\"" & $rWhere
+& " order by \"zzCreatedTimestamp\" offset " & $rSkip & " rows fetch first " & $rTop & " rows only"]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$rSql</Name></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[ExecuteSQL ( $rSql ; Char ( 31 ) ; Char ( 30 ) )]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$raw</Name></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/><Text>same separator dance as the log: park real returns on Char(11) first</Text></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[Let ( [
+  ~ok = Left ( $raw ; 1 ) <> "?" and not IsEmpty ( $raw ) ;
+  ~rows = Substitute ( Substitute ( $raw ; ¶ ; Char ( 11 ) ) ; Char ( 30 ) ; ¶ ) ;
+  ~n = If ( ~ok ; ValueCount ( ~rows ) ; 0 )
+] ;
+While (
+  [ ~i = 1 ; ~out = "[]" ] ;
+  ~i <= ~n ;
+  [
+    ~r = Substitute ( GetValue ( ~rows ; ~i ) ; Char ( 31 ) ; ¶ ) ;
+    ~p = "[" & ( ~i - 1 ) & "]" ;
+    ~out = JSONSetElement ( ~out ;
+      [ ~p & ".num" ; GetValue ( ~r ; 1 ) ; JSONString ] ;
+      [ ~p & ".orderDate" ; GetValue ( ~r ; 2 ) ; JSONString ] ;
+      [ ~p & ".created" ; GetValue ( ~r ; 3 ) ; JSONString ] ;
+      [ ~p & ".name" ; Substitute ( GetValue ( ~r ; 4 ) ; Char ( 11 ) ; " " ) ; JSONString ] ;
+      [ ~p & ".message" ; Substitute ( GetValue ( ~r ; 5 ) ; Char ( 11 ) ; ¶ ) ; JSONString ]
+    ) ;
+    ~i = ~i + 1
+  ] ;
+  ~out
+) )]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$rRows</Name></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[JSONSetElement ( "" ;
+  [ "skip" ; $rSkip ; JSONNumber ] ;
+  [ "top" ; $rTop ; JSONNumber ] ;
+  [ "total" ; $rTotal ; JSONNumber ] ;
+  [ "month" ; $rMonth ; JSONString ] ;
+  [ "sqlError" ; Case ( Left ( $raw ; 1 ) = "?" ; "Could not read the orders for " & $rMonth & "." ; "" ) ; JSONString ]
+)]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$rMeta</Name></Step><Step enable="True" id="175" name="Perform JavaScript in Web Viewer"><ObjectName><Calculation><![CDATA["web"]]></Calculation></ObjectName><FunctionName><Calculation><![CDATA["setReportData"]]></Calculation></FunctionName><Parameters Count="2"><P><Calculation><![CDATA[$rRows]]></Calculation></P><P><Calculation><![CDATA[$rMeta]]></Calculation></P></Parameters></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/><Text>--- end of reportLoad branch ---</Text></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/></Step></fmxmlsnippet>

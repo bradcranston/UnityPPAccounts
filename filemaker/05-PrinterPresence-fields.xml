@@ -1,0 +1,192 @@
+<fmxmlsnippet type="FMObjectList">
+	<Field id="1000" dataType="Text" fieldType="Calculated" name="orderNumber">
+		<Calculation table="PrinterPresence"><![CDATA[JSONGetElementValid ( PrinterPresence::messageClean ; "payload.message.message_tracking_number" )]]></Calculation>
+		<DisplayCalculation><Chunk type="NoRef">JSONGetElementValid ( PrinterPresence::messageClean ; &quot;payload.message.message_tracking_number&quot; )</Chunk></DisplayCalculation>
+		<Comment/>
+		<AutoEnter alwaysEvaluate="False"/>
+		<Storage storeCalculationResults="True" index="None" indexLanguage="English" global="False" maxRepetition="1"/>
+		<Annotation><Text/></Annotation>
+		<DisplayNames enable="False"/>
+	</Field>
+	<Field id="1001" dataType="TimeStamp" fieldType="Calculated" name="orderDate">
+		<Calculation table="PrinterPresence"><![CDATA[Let ([
+~tsraw = JSONGetElementValid ( PrinterPresence::messageClean ; "date_created" ) ;
+~l  = Substitute ( ~tsraw ; [ ":" ; ¶ ] ; [ "-" ; ¶ ] ; [ " " ; ¶ ] ; [ "T" ; ¶ ] ; [ "+" ; ¶ ] ) ;
+~y  = GetValue ( ~l ; 1 ) ;
+~mo = GetValue ( ~l ; 2 ) ;
+~d  = GetValue ( ~l ; 3 ) ;
+~h  = GetValue ( ~l ; 4 ) ;
+~mi = GetValue ( ~l ; 5 ) ;
+~s  = GetValue ( ~l ; 6 )
+] ;
+If ( IsEmpty ( ~tsraw ) ; "" ;
+	Timestamp ( Date ( ~mo ; ~d ; ~y ) ; Time ( ~h ; ~mi ; ~s ) )
+)
+)]]></Calculation>
+		<DisplayCalculation><Chunk type="NoRef">Let ([
+~tsraw = JSONGetElementValid ( PrinterPresence::messageClean ; &quot;date_created&quot; ) ;
+~l  = Substitute ( ~tsraw ; [ &quot;:&quot; ; ¶ ] ; [ &quot;-&quot; ; ¶ ] ; [ &quot; &quot; ; ¶ ] ; [ &quot;T&quot; ; ¶ ] ; [ &quot;+&quot; ; ¶ ] ) ;
+~y  = GetValue ( ~l ; 1 ) ;
+~mo = GetValue ( ~l ; 2 ) ;
+~d  = GetValue ( ~l ; 3 ) ;
+~h  = GetValue ( ~l ; 4 ) ;
+~mi = GetValue ( ~l ; 5 ) ;
+~s  = GetValue ( ~l ; 6 )
+] ;
+If ( IsEmpty ( ~tsraw ) ; &quot;&quot; ;
+	Timestamp ( Date ( ~mo ; ~d ; ~y ) ; Time ( ~h ; ~mi ; ~s ) )
+)
+)</Chunk></DisplayCalculation>
+		<Comment/>
+		<AutoEnter alwaysEvaluate="False"/>
+		<Storage storeCalculationResults="True" index="None" indexLanguage="English" global="False" maxRepetition="1"/>
+		<Annotation><Text/></Annotation>
+		<DisplayNames enable="False"/>
+	</Field>
+	<Field id="1002" dataType="Text" fieldType="Calculated" name="customerName">
+		<Calculation table="PrinterPresence"><![CDATA[Let ([
+~f  = "payload.message.form_submission.fields." ;
+~n1 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f & "name" ) ;
+~n2 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f & "your_name" ) ;
+~n3 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f & "first_&_last_name" ) ;
+~n4 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f & "unknown_field_label_f34712061" ) ;
+~n5 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f & "ordered_by" ) ;
+~fn = JSONGetElementValid ( PrinterPresence::messageClean ; ~f & "first_name" ) ;
+~ln = JSONGetElementValid ( PrinterPresence::messageClean ; ~f & "last_name" )
+] ;
+Trim ( Case (
+	not IsEmpty ( ~n1 ) ; ~n1 ;
+	not IsEmpty ( ~n2 ) ; ~n2 ;
+	not IsEmpty ( ~n3 ) ; ~n3 ;
+	not IsEmpty ( ~n4 ) ; ~n4 ;
+	not IsEmpty ( ~n5 ) ; ~n5 ;
+	Trim ( ~fn & " " & ~ln )
+) )
+)]]></Calculation>
+		<DisplayCalculation><Chunk type="NoRef">Let ([
+~f  = &quot;payload.message.form_submission.fields.&quot; ;
+~n1 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f &amp; &quot;name&quot; ) ;
+~n2 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f &amp; &quot;your_name&quot; ) ;
+~n3 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f &amp; &quot;first_&amp;_last_name&quot; ) ;
+~n4 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f &amp; &quot;unknown_field_label_f34712061&quot; ) ;
+~n5 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f &amp; &quot;ordered_by&quot; ) ;
+~fn = JSONGetElementValid ( PrinterPresence::messageClean ; ~f &amp; &quot;first_name&quot; ) ;
+~ln = JSONGetElementValid ( PrinterPresence::messageClean ; ~f &amp; &quot;last_name&quot; )
+] ;
+Trim ( Case (
+	not IsEmpty ( ~n1 ) ; ~n1 ;
+	not IsEmpty ( ~n2 ) ; ~n2 ;
+	not IsEmpty ( ~n3 ) ; ~n3 ;
+	not IsEmpty ( ~n4 ) ; ~n4 ;
+	not IsEmpty ( ~n5 ) ; ~n5 ;
+	Trim ( ~fn &amp; &quot; &quot; &amp; ~ln )
+) )
+)</Chunk></DisplayCalculation>
+		<Comment/>
+		<AutoEnter alwaysEvaluate="False"/>
+		<Storage storeCalculationResults="True" index="None" indexLanguage="English" global="False" maxRepetition="1"/>
+		<Annotation><Text/></Annotation>
+		<DisplayNames enable="False"/>
+	</Field>
+	<Field id="1003" dataType="Text" fieldType="Calculated" name="customerEmail">
+		<Calculation table="PrinterPresence"><![CDATA[Let ([
+~f  = "payload.message.form_submission.fields." ;
+~e1 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f & "e_mail_address" ) ;
+~e2 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f & "email" )
+] ;
+Trim ( If ( not IsEmpty ( ~e1 ) ; ~e1 ; ~e2 ) )
+)]]></Calculation>
+		<DisplayCalculation><Chunk type="NoRef">Let ([
+~f  = &quot;payload.message.form_submission.fields.&quot; ;
+~e1 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f &amp; &quot;e_mail_address&quot; ) ;
+~e2 = JSONGetElementValid ( PrinterPresence::messageClean ; ~f &amp; &quot;email&quot; )
+] ;
+Trim ( If ( not IsEmpty ( ~e1 ) ; ~e1 ; ~e2 ) )
+)</Chunk></DisplayCalculation>
+		<Comment/>
+		<AutoEnter alwaysEvaluate="False"/>
+		<Storage storeCalculationResults="True" index="None" indexLanguage="English" global="False" maxRepetition="1"/>
+		<Annotation><Text/></Annotation>
+		<DisplayNames enable="False"/>
+	</Field>
+	<Field id="1004" dataType="Number" fieldType="Calculated" name="orderAmount">
+		<Calculation table="PrinterPresence"><![CDATA[Let ([
+~a = JSONGetElementValid ( PrinterPresence::messageClean ; "payload.message.payment_transactions.data[]amount" )
+] ;
+If ( IsEmpty ( ~a ) ; "" ;
+	If ( PatternCount ( ~a ; "." ) ;
+		GetAsNumber ( ~a ) ;
+		Round ( GetAsNumber ( ~a ) / 100 ; 2 )
+	)
+)
+)]]></Calculation>
+		<DisplayCalculation><Chunk type="NoRef">Let ([
+~a = JSONGetElementValid ( PrinterPresence::messageClean ; &quot;payload.message.payment_transactions.data[]amount&quot; )
+] ;
+If ( IsEmpty ( ~a ) ; &quot;&quot; ;
+	If ( PatternCount ( ~a ; &quot;.&quot; ) ;
+		GetAsNumber ( ~a ) ;
+		Round ( GetAsNumber ( ~a ) / 100 ; 2 )
+	)
+)
+)</Chunk></DisplayCalculation>
+		<Comment/>
+		<AutoEnter alwaysEvaluate="False"/>
+		<Storage storeCalculationResults="True" index="None" indexLanguage="English" global="False" maxRepetition="1"/>
+		<Annotation><Text/></Annotation>
+		<DisplayNames enable="False"/>
+	</Field>
+	<Field id="1005" dataType="Number" fieldType="Calculated" name="itemCount">
+		<Calculation table="PrinterPresence"><![CDATA[Let ([
+~arr = JSONGetElement ( PrinterPresence::messageClean ; "payload.items.data" )
+] ;
+If ( IsEmpty ( ~arr ) or ~arr = "?" ; 0 ; ValueCount ( JSONListKeys ( ~arr ; "" ) ) )
+)]]></Calculation>
+		<DisplayCalculation><Chunk type="NoRef">Let ([
+~arr = JSONGetElement ( PrinterPresence::messageClean ; &quot;payload.items.data&quot; )
+] ;
+If ( IsEmpty ( ~arr ) or ~arr = &quot;?&quot; ; 0 ; ValueCount ( JSONListKeys ( ~arr ; &quot;&quot; ) ) )
+)</Chunk></DisplayCalculation>
+		<Comment/>
+		<AutoEnter alwaysEvaluate="False"/>
+		<Storage storeCalculationResults="True" index="None" indexLanguage="English" global="False" maxRepetition="1"/>
+		<Annotation><Text/></Annotation>
+		<DisplayNames enable="False"/>
+	</Field>
+	<Field id="1006" dataType="Text" fieldType="Calculated" name="itemTitles">
+		<Calculation table="PrinterPresence"><![CDATA[While (
+	[ ~arr = JSONGetElement ( PrinterPresence::messageClean ; "payload.items.data" ) ;
+	  ~n   = If ( IsEmpty ( ~arr ) or ~arr = "?" ; 0 ; ValueCount ( JSONListKeys ( ~arr ; "" ) ) ) ;
+	  ~i   = 0 ;
+	  ~out = "" ] ;
+	~i < ~n ;
+	[ ~out = ~out & If ( ~i > 0 ; ¶ ) & JSONGetElement ( ~arr ; "[" & ~i & "].title" ) ;
+	  ~i   = ~i + 1 ] ;
+	~out
+)]]></Calculation>
+		<DisplayCalculation><Chunk type="NoRef">While (
+	[ ~arr = JSONGetElement ( PrinterPresence::messageClean ; &quot;payload.items.data&quot; ) ;
+	  ~n   = If ( IsEmpty ( ~arr ) or ~arr = &quot;?&quot; ; 0 ; ValueCount ( JSONListKeys ( ~arr ; &quot;&quot; ) ) ) ;
+	  ~i   = 0 ;
+	  ~out = &quot;&quot; ] ;
+	~i &lt; ~n ;
+	[ ~out = ~out &amp; If ( ~i &gt; 0 ; ¶ ) &amp; JSONGetElement ( ~arr ; &quot;[&quot; &amp; ~i &amp; &quot;].title&quot; ) ;
+	  ~i   = ~i + 1 ] ;
+	~out
+)</Chunk></DisplayCalculation>
+		<Comment/>
+		<AutoEnter alwaysEvaluate="False"/>
+		<Storage storeCalculationResults="True" index="None" indexLanguage="English" global="False" maxRepetition="1"/>
+		<Annotation><Text/></Annotation>
+		<DisplayNames enable="False"/>
+	</Field>
+	<Field id="1007" dataType="Text" fieldType="Calculated" name="idText">
+		<Calculation table="PrinterPresence"><![CDATA[GetAsText ( PrinterPresence::__ID )]]></Calculation>
+		<DisplayCalculation><Chunk type="NoRef">GetAsText ( PrinterPresence::__ID )</Chunk></DisplayCalculation>
+		<Comment/>
+		<AutoEnter alwaysEvaluate="False"/>
+		<Storage storeCalculationResults="True" index="None" indexLanguage="English" global="False" maxRepetition="1"/>
+		<Annotation><Text/></Annotation>
+		<DisplayNames enable="False"/>
+	</Field>
+</fmxmlsnippet>

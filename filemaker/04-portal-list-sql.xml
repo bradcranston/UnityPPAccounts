@@ -1,0 +1,63 @@
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $resultPortal; Value:Let ( [ ~rows = ExecuteSQL ( &quot;SELECT DISTINCT ... &quot; ) ... ] ; ... ) ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[Let ( [
+
+// Unique portals that are not already an account, straight out of the index.
+// Replaces pulling all 7,153 PrinterPresence rows over OData on every load.
+~rows = ExecuteSQL ( "SELECT DISTINCT \"portal\", \"number\" FROM \"PrinterPresence\" WHERE \"portal\" IS NOT NULL AND \"portal\" NOT IN ( SELECT \"Name\" FROM \"Account\" WHERE \"Name\" IS NOT NULL ) AND ( \"number\" IS NULL OR \"number\" NOT IN ( SELECT CAST(\"AccountNumber\" AS INT) FROM \"Account\" WHERE \"AccountNumber\" IS NOT NULL ) ) ORDER BY \"portal\"" ; Char ( 9 ) ; Char ( 13 ) ) ;
+
+// ExecuteSQL answers "?" on a syntax or privilege error - never a portal list
+~ok = not IsEmpty ( ~rows ) and Left ( ~rows ; 1 ) ≠ "?"
+
+] ;
+
+If ( not ~ok ; "{\"value\":[]}" ;
+
+"{\"value\":[" &
+While (
+	[ ~n = ValueCount ( ~rows ) ; ~i = 1 ; ~out = "" ] ;
+	~i ≤ ~n ;
+	[ ~cells  = Substitute ( GetValue ( ~rows ; ~i ) ; Char ( 9 ) ; ¶ ) ;
+	  ~portal = GetValue ( ~cells ; 1 ) ;
+	  ~num    = GetValue ( ~cells ; 2 ) ;
+	  ~obj    = JSONSetElement ( "{}" ; "portal" ; ~portal ; JSONString ) ;
+	  ~obj    = If ( IsEmpty ( ~num ) ;
+	                 JSONSetElement ( ~obj ; "number" ; "null" ; JSONRaw ) ;
+	                 JSONSetElement ( ~obj ; "number" ; ~num ; JSONNumber ) ) ;
+	  ~out    = ~out & If ( ~i > 1 ; "," ) & ~obj ;
+	  ~i      = ~i + 1 ] ;
+	~out
+)
+& "]}"
+
+) )]]></Calculation><DisplayCalculation><Chunk type="NoRef">Let ( [
+
+// Unique portals that are not already an account, straight out of the index.
+// Replaces pulling all 7,153 PrinterPresence rows over OData on every load.
+~rows = ExecuteSQL ( &quot;SELECT DISTINCT \&quot;portal\&quot;, \&quot;number\&quot; FROM \&quot;PrinterPresence\&quot; WHERE \&quot;portal\&quot; IS NOT NULL AND \&quot;portal\&quot; NOT IN ( SELECT \&quot;Name\&quot; FROM \&quot;Account\&quot; WHERE \&quot;Name\&quot; IS NOT NULL ) AND ( \&quot;number\&quot; IS NULL OR \&quot;number\&quot; NOT IN ( SELECT CAST(\&quot;AccountNumber\&quot; AS INT) FROM \&quot;Account\&quot; WHERE \&quot;AccountNumber\&quot; IS NOT NULL ) ) ORDER BY \&quot;portal\&quot;&quot; ; Char ( 9 ) ; Char ( 13 ) ) ;
+
+// ExecuteSQL answers &quot;?&quot; on a syntax or privilege error - never a portal list
+~ok = not IsEmpty ( ~rows ) and Left ( ~rows ; 1 ) ≠ &quot;?&quot;
+
+] ;
+
+If ( not ~ok ; &quot;{\&quot;value\&quot;:[]}&quot; ;
+
+&quot;{\&quot;value\&quot;:[&quot; &amp;
+While (
+	[ ~n = ValueCount ( ~rows ) ; ~i = 1 ; ~out = &quot;&quot; ] ;
+	~i ≤ ~n ;
+	[ ~cells  = Substitute ( GetValue ( ~rows ; ~i ) ; Char ( 9 ) ; ¶ ) ;
+	  ~portal = GetValue ( ~cells ; 1 ) ;
+	  ~num    = GetValue ( ~cells ; 2 ) ;
+	  ~obj    = JSONSetElement ( &quot;{}&quot; ; &quot;portal&quot; ; ~portal ; JSONString ) ;
+	  ~obj    = If ( IsEmpty ( ~num ) ;
+	                 JSONSetElement ( ~obj ; &quot;number&quot; ; &quot;null&quot; ; JSONRaw ) ;
+	                 JSONSetElement ( ~obj ; &quot;number&quot; ; ~num ; JSONNumber ) ) ;
+	  ~out    = ~out &amp; If ( ~i &gt; 1 ; &quot;,&quot; ) &amp; ~obj ;
+	  ~i      = ~i + 1 ] ;
+	~out
+)
+&amp; &quot;]}&quot;
+
+) )</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$resultPortal</Name></Step>
+</fmxmlsnippet>

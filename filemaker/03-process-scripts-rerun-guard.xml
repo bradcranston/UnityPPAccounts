@@ -1,0 +1,57 @@
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="68" name="If"><StepText>If [ Get ( ScriptParameter ) = &quot;rerun&quot; or
+
+Let ( [
+  ¢tsraw = JSONGetElementValid ( PrinterPresence::messageClean ; &quot;date_created&quot; )
+; ¢tsrawlist = Substitute ( ¢tsraw  ; [ &quot;:&quot; ; ¶ ] ; [ &quot;-&quot; ; ¶ ] ; [ &quot; &quot; ; ¶ ] ; [ &quot;T&quot; ; ¶ ] ; [ &quot;+&quot; ; ¶ ] )
+; ¢year = GetValue ( ¢tsrawlist ; 1 )
+; ¢month = GetValue ( ¢tsrawlist ; 2 )
+; ¢day = GetValue ( ¢tsrawlist ; 3 )
+; ¢hour = GetValue ( ¢tsrawlist ; 4 )
+; ¢minute = GetValue ( ¢tsrawlist ; 5 )
+; ¢second = GetValue ( ¢tsrawlist ; 6 )
+; ¢start = Timestamp ( Date ( ¢month ; ¢day ; ¢year ) ; Time ( ¢hour - 6 ; 0 ; 0 ) )
+; ¢end = Timestamp ( Date ( ¢month ; ¢day ; ¢year ) ; Time ( ¢hour - 2 ; 0 ; 0 ) )
+]
+;
+
+GetAsTimestamp ( PrinterPresence::zzCreatedTimestamp ) &gt; GetAsTimestamp ( ¢start ) and GetAsTimestamp ( PrinterPresence::zzCreatedTimestamp ) &lt; GetAsTimestamp ( ¢end )
+
+ ) ]</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Calculation><![CDATA[Get ( ScriptParameter ) = "rerun" or
+
+Let ( [
+  ¢tsraw = JSONGetElementValid ( PrinterPresence::messageClean ; "date_created" )
+; ¢tsrawlist = Substitute ( ¢tsraw  ; [ ":" ; ¶ ] ; [ "-" ; ¶ ] ; [ " " ; ¶ ] ; [ "T" ; ¶ ] ; [ "+" ; ¶ ] )
+; ¢year = GetValue ( ¢tsrawlist ; 1 )
+; ¢month = GetValue ( ¢tsrawlist ; 2 )
+; ¢day = GetValue ( ¢tsrawlist ; 3 )
+; ¢hour = GetValue ( ¢tsrawlist ; 4 )
+; ¢minute = GetValue ( ¢tsrawlist ; 5 )
+; ¢second = GetValue ( ¢tsrawlist ; 6 )
+; ¢start = Timestamp ( Date ( ¢month ; ¢day ; ¢year ) ; Time ( ¢hour - 6 ; 0 ; 0 ) )
+; ¢end = Timestamp ( Date ( ¢month ; ¢day ; ¢year ) ; Time ( ¢hour - 2 ; 0 ; 0 ) )
+]
+;
+
+GetAsTimestamp ( PrinterPresence::zzCreatedTimestamp ) > GetAsTimestamp ( ¢start ) and GetAsTimestamp ( PrinterPresence::zzCreatedTimestamp ) < GetAsTimestamp ( ¢end )
+
+ )]]></Calculation><DisplayCalculation><Chunk type="NoRef">Get ( ScriptParameter ) = &quot;rerun&quot; or
+
+Let ( [
+  ¢tsraw = JSONGetElementValid ( PrinterPresence::messageClean ; &quot;date_created&quot; )
+; ¢tsrawlist = Substitute ( ¢tsraw  ; [ &quot;:&quot; ; ¶ ] ; [ &quot;-&quot; ; ¶ ] ; [ &quot; &quot; ; ¶ ] ; [ &quot;T&quot; ; ¶ ] ; [ &quot;+&quot; ; ¶ ] )
+; ¢year = GetValue ( ¢tsrawlist ; 1 )
+; ¢month = GetValue ( ¢tsrawlist ; 2 )
+; ¢day = GetValue ( ¢tsrawlist ; 3 )
+; ¢hour = GetValue ( ¢tsrawlist ; 4 )
+; ¢minute = GetValue ( ¢tsrawlist ; 5 )
+; ¢second = GetValue ( ¢tsrawlist ; 6 )
+; ¢start = Timestamp ( Date ( ¢month ; ¢day ; ¢year ) ; Time ( ¢hour - 6 ; 0 ; 0 ) )
+; ¢end = Timestamp ( Date ( ¢month ; ¢day ; ¢year ) ; Time ( ¢hour - 2 ; 0 ; 0 ) )
+]
+;
+
+GetAsTimestamp ( PrinterPresence::zzCreatedTimestamp ) &gt; GetAsTimestamp ( ¢start ) and GetAsTimestamp ( PrinterPresence::zzCreatedTimestamp ) &lt; GetAsTimestamp ( ¢end )
+
+ )</Chunk></DisplayCalculation></Step>
+</fmxmlsnippet>

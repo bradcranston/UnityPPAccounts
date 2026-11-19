@@ -1,0 +1,54 @@
+<fmxmlsnippet type="FMObjectList"><Step enable="True" id="125" name="Else If"><Restore state="False"/><Calculation><![CDATA[$mode = "setPrefix"]]></Calculation></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/><Text>Accounts tab: save one account's tracking prefix. 9/23/26 bc</Text></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/><Text>Parameter: { __ID, TrackingPrefix }. Answers the widget via setPrefixResult.</Text></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[JSONGetElement ( $param ; "__ID" )]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$id</Name></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[Let ( [
+
+// Same normalizing the widget does: commas, semicolons, returns and spaces all
+// separate prefixes; blanks and repeats are dropped; stored as "A, B".
+~v = Substitute ( JSONGetElement ( $param ; "TrackingPrefix" ) ; [ ¶ ; "," ] ; [ ";" ; "," ] ; [ Char ( 9 ) ; "," ] ; [ " " ; "," ] ) ;
+~l = Substitute ( ~v ; "," ; ¶ )
+
+] ;
+
+Substitute (
+	While (
+		[ ~i = 1 ; ~o = "" ] ;
+		~i ≤ ValueCount ( ~l ) ;
+		[
+			~p = Trim ( GetValue ( ~l ; ~i ) ) ;
+			~o = If ( IsEmpty ( ~p ) or not IsEmpty ( FilterValues ( Upper ( ~o ) ; Upper ( ~p ) ) ) ; ~o ; List ( ~o ; ~p ) ) ;
+			~i = ~i + 1
+		] ;
+		~o
+	) ;
+	¶ ; ", "
+)
+
+)]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$prefix</Name></Step><Step enable="True" id="68" name="If"><Restore state="False"/><Calculation><![CDATA[IsEmpty ( $id )]]></Calculation></Step><Step enable="True" id="103" name="Exit Script"></Step><Step enable="True" id="70" name="End If"></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/><Text>refuse a prefix that another account already uses</Text></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[Let ( [
+
+// Any of these prefixes already on ANOTHER account (exact, case-insensitive)?
+// A shorter prefix that only overlaps a longer one is fine - longest match wins.
+~mine = Upper ( Substitute ( $prefix ; [ " " ; "" ] ; [ "," ; ¶ ] ) ) ;
+~raw = ExecuteSQL ( " select \"TrackingPrefix\", \"Name\" from \"Account\" where \"__ID\" <> ? and \"TrackingPrefix\" is not null " ; Char ( 31 ) ; Char ( 30 ) ; $id ) ;
+~ok = not IsEmpty ( ~raw ) and Left ( ~raw ; 1 ) ≠ "?" ;
+~rows = Substitute ( ~raw ; [ ¶ ; " " ] ; [ Char ( 30 ) ; ¶ ] ) ;
+~n = If ( ~ok and not IsEmpty ( $prefix ) ; ValueCount ( ~rows ) ; 0 )
+
+] ;
+
+While (
+	[ ~i = 1 ; ~out = "" ] ;
+	~i ≤ ~n ;
+	[
+		~r = Substitute ( GetValue ( ~rows ; ~i ) ; Char ( 31 ) ; ¶ ) ;
+		~theirs = Upper ( Substitute ( GetValue ( ~r ; 1 ) ; [ " " ; "" ] ; [ "," ; ¶ ] ) ) ;
+		~hit = GetValue ( FilterValues ( ~mine ; ~theirs ) ; 1 ) ;
+		~out = If ( IsEmpty ( ~hit ) ; ~out ; List ( ~out ; ~hit & " is already on " & GetValue ( ~r ; 2 ) ) ) ;
+		~i = ~i + 1
+	] ;
+	Substitute ( ~out ; ¶ ; ". " )
+)
+
+)]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$clash</Name></Step><Step enable="True" id="68" name="If"><Restore state="False"/><Calculation><![CDATA[not IsEmpty ( $clash )]]></Calculation></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[JSONSetElement ( "" ; [ "ok" ; False ; JSONBoolean ] ; [ "__ID" ; $id ; JSONString ] ; [ "errors" ; $clash & "." ; JSONString ] )]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$out</Name></Step><Step enable="True" id="175" name="Perform JavaScript in Web Viewer"><ObjectName><Calculation><![CDATA["web"]]></Calculation></ObjectName><FunctionName><Calculation><![CDATA["setPrefixResult"]]></Calculation></FunctionName><Parameters Count="1"><P><Calculation><![CDATA[$out]]></Calculation></P></Parameters></Step><Step enable="True" id="103" name="Exit Script"></Step><Step enable="True" id="70" name="End If"></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA["https://" & Get ( HostIPAddress ) & "/fmi/odata/v4/" & Get ( FileName ) & "/Account('" & $id & "')"]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$url</Name></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[JSONSetElement ( "" ; [ "TrackingPrefix" ; $prefix ; JSONString ] )]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$data</Name></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA["--X PATCH --H \"Accept: application/json\" --H \"Content-Type: application/json\" --H \"OData-Version: 4.0\" --H \"OData-MaxVersion: 4.0\" --H \"Authorization: Basic " & Base64EncodeRFC ( 4648 ; "odata:Z2Qn6snj8CnJ4jZ2kQ6H" ) &  "\" --location --dump-header $headerresponse -T $data "]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$payload</Name></Step><Step enable="True" id="160" name="Insert from URL"><NoInteract state="True"/><DontEncodeURL state="False"/><SelectAll state="True"/><VerifySSLCertificates state="False"/><CURLOptions><Calculation><![CDATA[$payload]]></Calculation></CURLOptions><Calculation><![CDATA[$url]]></Calculation><Text/><Field>$result</Field></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[PatternCount ( $headerresponse ; " 200" ) or PatternCount ( $headerresponse ; " 204" )]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$ok</Name></Step><Step enable="True" id="141" name="Set Variable"><Value><Calculation><![CDATA[JSONSetElement ( "" ;
+	[ "ok" ; $ok ; JSONBoolean ] ;
+	[ "__ID" ; $id ; JSONString ] ;
+	[ "TrackingPrefix" ; $prefix ; JSONString ] ;
+	[ "errors" ; If ( $ok ; "" ; "The tracking prefix was not saved. " & JSONGetElementValid ( $result ; "error.message" ) ) ; JSONString ]
+)]]></Calculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation></Repetition><Name>$out</Name></Step><Step enable="True" id="175" name="Perform JavaScript in Web Viewer"><ObjectName><Calculation><![CDATA["web"]]></Calculation></ObjectName><FunctionName><Calculation><![CDATA["setPrefixResult"]]></Calculation></FunctionName><Parameters Count="1"><P><Calculation><![CDATA[$out]]></Calculation></P></Parameters></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/><Text>--- end of setPrefix branch ---</Text></Step><Step enable="True" id="89" name="# (comment)"><Restore state="False"/></Step></fmxmlsnippet>

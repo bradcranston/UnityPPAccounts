@@ -1,0 +1,212 @@
+<fmxmlsnippet type="FMObjectList">
+<Step enable="True" id="125" name="Else If"><StepText>Else If [ $mode = &quot;logLoad&quot; ]</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Calculation><![CDATA[$mode = "logLoad"]]></Calculation><DisplayCalculation><Chunk type="NoRef">$mode = &quot;logLoad&quot;</Chunk></DisplayCalculation></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText/><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText>#One page of the PrinterPresence log.</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Text>One page of the PrinterPresence log.</Text></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText/><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText>#Runs through ExecuteSQL, not OData. FileMaker's OData $filter has no</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Text>Runs through ExecuteSQL, not OData. FileMaker's OData $filter has no</Text></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText>#contains() - the server answers &quot;Syntax error for 'contains' function&quot; -</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Text>contains() - the server answers &quot;Syntax error for 'contains' function&quot; -</Text></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText>#and startswith() alone is too weak for searching names and order numbers.</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Text>and startswith() alone is too weak for searching names and order numbers.</Text></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText>#SQL LIKE gives real substring search, and there is no URL to encode.</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Text>SQL LIKE gives real substring search, and there is no URL to encode.</Text></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText/><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $logTop; Value:Let ( ~t = GetAsNumber ( JSONGetElement ( $param ; &quot;top&quot; ) ) ; If ( ~t &gt; 0 ; Min ( ~t ; 500 ) ; 200 ) ) ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[Let ( ~t = GetAsNumber ( JSONGetElement ( $param ; "top" ) ) ; If ( ~t > 0 ; Min ( ~t ; 500 ) ; 200 ) )]]></Calculation><DisplayCalculation><Chunk type="NoRef">Let ( ~t = GetAsNumber ( JSONGetElement ( $param ; &quot;top&quot; ) ) ; If ( ~t &gt; 0 ; Min ( ~t ; 500 ) ; 200 ) )</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$logTop</Name></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $logSkip; Value:Max ( 0 ; GetAsNumber ( JSONGetElement ( $param ; &quot;skip&quot; ) ) ) ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[Max ( 0 ; GetAsNumber ( JSONGetElement ( $param ; "skip" ) ) )]]></Calculation><DisplayCalculation><Chunk type="NoRef">Max ( 0 ; GetAsNumber ( JSONGetElement ( $param ; &quot;skip&quot; ) ) )</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$logSkip</Name></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $logSearch; Value:Trim ( JSONGetElement ( $param ; &quot;search&quot; ) ) ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[Trim ( JSONGetElement ( $param ; "search" ) )]]></Calculation><DisplayCalculation><Chunk type="NoRef">Trim ( JSONGetElement ( $param ; &quot;search&quot; ) )</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$logSearch</Name></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $logStatus; Value:JSONGetElement ( $param ; &quot;status&quot; ) ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[JSONGetElement ( $param ; "status" )]]></Calculation><DisplayCalculation><Chunk type="NoRef">JSONGetElement ( $param ; &quot;status&quot; )</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$logStatus</Name></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $logAccount; Value:JSONGetElement ( $param ; &quot;account&quot; ) ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[JSONGetElement ( $param ; "account" )]]></Calculation><DisplayCalculation><Chunk type="NoRef">JSONGetElement ( $param ; &quot;account&quot; )</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$logAccount</Name></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText/><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText>#The search term is the only user-typed value and it travels as a ?</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Text>The search term is the only user-typed value and it travels as a ?</Text></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText>#parameter. Status and account come from fixed dropdowns.</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Text>parameter. Status and account come from fixed dropdowns.</Text></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $where; Value:&quot;1 = 1&quot; ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA["1 = 1"]]></Calculation><DisplayCalculation><Chunk type="NoRef">&quot;1 = 1&quot;</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$where</Name></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText/><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="68" name="If"><StepText>If [ not IsEmpty ( $logSearch ) ]</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Calculation><![CDATA[not IsEmpty ( $logSearch )]]></Calculation><DisplayCalculation><Chunk type="NoRef">not IsEmpty ( $logSearch )</Chunk></DisplayCalculation></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $where; Value:$where &amp; &quot; and ( \&quot;portal\&quot; like ? or \&quot;orderNumber\&quot; like ? or \&quot;customerName\&quot; like ? or \&quot;customerEmail\&quot; like ? )&quot; ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[$where & " and ( \"portal\" like ? or \"orderNumber\" like ? or \"customerName\" like ? or \"customerEmail\" like ? )"]]></Calculation><DisplayCalculation><Chunk type="NoRef">$where &amp; &quot; and ( \&quot;portal\&quot; like ? or \&quot;orderNumber\&quot; like ? or \&quot;customerName\&quot; like ? or \&quot;customerEmail\&quot; like ? )&quot;</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$where</Name></Step>
+<Step enable="True" id="70" name="End If"><StepText>End If</StepText><DisableStepCollapsed state="False"/></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText/><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText>#status filter</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Text>status filter</Text></Step>
+<Step enable="True" id="68" name="If"><StepText>If [ $logStatus = &quot;blank&quot; ]</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Calculation><![CDATA[$logStatus = "blank"]]></Calculation><DisplayCalculation><Chunk type="NoRef">$logStatus = &quot;blank&quot;</Chunk></DisplayCalculation></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $where; Value:$where &amp; &quot; and ( \&quot;status\&quot; is null or \&quot;status\&quot; = '' )&quot; ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[$where & " and ( \"status\" is null or \"status\" = '' )"]]></Calculation><DisplayCalculation><Chunk type="NoRef">$where &amp; &quot; and ( \&quot;status\&quot; is null or \&quot;status\&quot; = '' )&quot;</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$where</Name></Step>
+<Step enable="True" id="125" name="Else If"><StepText>Else If [ $logStatus = &quot;skipped&quot; ]</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Calculation><![CDATA[$logStatus = "skipped"]]></Calculation><DisplayCalculation><Chunk type="NoRef">$logStatus = &quot;skipped&quot;</Chunk></DisplayCalculation></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $where; Value:$where &amp; &quot; and \&quot;status\&quot; like 'skipped%'&quot; ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[$where & " and \"status\" like 'skipped%'"]]></Calculation><DisplayCalculation><Chunk type="NoRef">$where &amp; &quot; and \&quot;status\&quot; like 'skipped%'&quot;</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$where</Name></Step>
+<Step enable="True" id="125" name="Else If"><StepText>Else If [ not IsEmpty ( $logStatus ) and $logStatus ≠ &quot;all&quot; ]</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Calculation><![CDATA[not IsEmpty ( $logStatus ) and $logStatus ≠ "all"]]></Calculation><DisplayCalculation><Chunk type="NoRef">not IsEmpty ( $logStatus ) and $logStatus ≠ &quot;all&quot;</Chunk></DisplayCalculation></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $where; Value:$where &amp; &quot; and \&quot;status\&quot; = '&quot; &amp; Substitute ( $logStatus ; &quot;'&quot; ; &quot;''&quot; ) &amp; &quot;'&quot; ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[$where & " and \"status\" = '" & Substitute ( $logStatus ; "'" ; "''" ) & "'"]]></Calculation><DisplayCalculation><Chunk type="NoRef">$where &amp; &quot; and \&quot;status\&quot; = '&quot; &amp; Substitute ( $logStatus ; &quot;'&quot; ; &quot;''&quot; ) &amp; &quot;'&quot;</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$where</Name></Step>
+<Step enable="True" id="70" name="End If"><StepText>End If</StepText><DisableStepCollapsed state="False"/></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText/><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText>#account filter</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Text>account filter</Text></Step>
+<Step enable="True" id="68" name="If"><StepText>If [ $logAccount = &quot;active&quot; ]</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Calculation><![CDATA[$logAccount = "active"]]></Calculation><DisplayCalculation><Chunk type="NoRef">$logAccount = &quot;active&quot;</Chunk></DisplayCalculation></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $where; Value:$where &amp; &quot; and \&quot;number\&quot; in (&quot; &amp; &quot; select cast(\&quot;AccountNumber\&quot; as int) from \&quot;Account\&quot; where \&quot;fActive\&quot; = 1 and \&quot;AccountNumber\&quot; is not null &quot; &amp; &quot;)&quot; ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[$where & " and \"number\" in (" & " select cast(\"AccountNumber\" as int) from \"Account\" where \"fActive\" = 1 and \"AccountNumber\" is not null " & ")"]]></Calculation><DisplayCalculation><Chunk type="NoRef">$where &amp; &quot; and \&quot;number\&quot; in (&quot; &amp; &quot; select cast(\&quot;AccountNumber\&quot; as int) from \&quot;Account\&quot; where \&quot;fActive\&quot; = 1 and \&quot;AccountNumber\&quot; is not null &quot; &amp; &quot;)&quot;</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$where</Name></Step>
+<Step enable="True" id="125" name="Else If"><StepText>Else If [ $logAccount = &quot;none&quot; ]</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Calculation><![CDATA[$logAccount = "none"]]></Calculation><DisplayCalculation><Chunk type="NoRef">$logAccount = &quot;none&quot;</Chunk></DisplayCalculation></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $where; Value:$where &amp; &quot; and ( \&quot;number\&quot; is null or \&quot;number\&quot; not in (&quot; &amp; &quot; select cast(\&quot;AccountNumber\&quot; as int) from \&quot;Account\&quot; where \&quot;fActive\&quot; = 1 and \&quot;AccountNumber\&quot; is not null &quot; &amp; &quot;) )&quot; ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[$where & " and ( \"number\" is null or \"number\" not in (" & " select cast(\"AccountNumber\" as int) from \"Account\" where \"fActive\" = 1 and \"AccountNumber\" is not null " & ") )"]]></Calculation><DisplayCalculation><Chunk type="NoRef">$where &amp; &quot; and ( \&quot;number\&quot; is null or \&quot;number\&quot; not in (&quot; &amp; &quot; select cast(\&quot;AccountNumber\&quot; as int) from \&quot;Account\&quot; where \&quot;fActive\&quot; = 1 and \&quot;AccountNumber\&quot; is not null &quot; &amp; &quot;) )&quot;</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$where</Name></Step>
+<Step enable="True" id="70" name="End If"><StepText>End If</StepText><DisableStepCollapsed state="False"/></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText/><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $like; Value:&quot;%&quot; &amp; $logSearch &amp; &quot;%&quot; ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA["%" & $logSearch & "%"]]></Calculation><DisplayCalculation><Chunk type="NoRef">&quot;%&quot; &amp; $logSearch &amp; &quot;%&quot;</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$like</Name></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $csql; Value:&quot;select count(*) from \&quot;PrinterPresence\&quot; where &quot; &amp; $where ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA["select count(*) from \"PrinterPresence\" where " & $where]]></Calculation><DisplayCalculation><Chunk type="NoRef">&quot;select count(*) from \&quot;PrinterPresence\&quot; where &quot; &amp; $where</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$csql</Name></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $sql; Value:&quot;select \&quot;idText\&quot;,\&quot;portal\&quot;,\&quot;number\&quot;,\&quot;status\&quot;,\&quot;type\&quot;,\&quot;orderNumber\&quot;,\&quot;orderDate\&quot;,\&quot;customerName\&quot;,\&quot;customerEmail\&quot;,\&quot;orderAmount\&quot;,\&quot;itemCount\&quot;,\&quot;itemTitles\&quot;,\&quot;zzCreatedTimestamp\&quot; from \&quot;PrinterPresence\&quot; where &quot; &amp; $where &amp; &quot; order by \&quot;zzCreatedTimestamp\&quot; desc offset &quot; &amp; $logSkip &amp; &quot; rows fetch first &quot; &amp; $logTop &amp; &quot; rows only&quot; ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA["select \"idText\",\"portal\",\"number\",\"status\",\"type\",\"orderNumber\",\"orderDate\",\"customerName\",\"customerEmail\",\"orderAmount\",\"itemCount\",\"itemTitles\",\"zzCreatedTimestamp\" from \"PrinterPresence\" where " & $where & " order by \"zzCreatedTimestamp\" desc offset " & $logSkip & " rows fetch first " & $logTop & " rows only"]]></Calculation><DisplayCalculation><Chunk type="NoRef">&quot;select \&quot;idText\&quot;,\&quot;portal\&quot;,\&quot;number\&quot;,\&quot;status\&quot;,\&quot;type\&quot;,\&quot;orderNumber\&quot;,\&quot;orderDate\&quot;,\&quot;customerName\&quot;,\&quot;customerEmail\&quot;,\&quot;orderAmount\&quot;,\&quot;itemCount\&quot;,\&quot;itemTitles\&quot;,\&quot;zzCreatedTimestamp\&quot; from \&quot;PrinterPresence\&quot; where &quot; &amp; $where &amp; &quot; order by \&quot;zzCreatedTimestamp\&quot; desc offset &quot; &amp; $logSkip &amp; &quot; rows fetch first &quot; &amp; $logTop &amp; &quot; rows only&quot;</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$sql</Name></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText/><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText>#four LIKE parameters only when there is a search term</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Text>four LIKE parameters only when there is a search term</Text></Step>
+<Step enable="True" id="68" name="If"><StepText>If [ IsEmpty ( $logSearch ) ]</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Calculation><![CDATA[IsEmpty ( $logSearch )]]></Calculation><DisplayCalculation><Chunk type="NoRef">IsEmpty ( $logSearch )</Chunk></DisplayCalculation></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $total; Value:ExecuteSQL ( $csql ; &quot;&quot; ; &quot;&quot; ) ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[ExecuteSQL ( $csql ; "" ; "" )]]></Calculation><DisplayCalculation><Chunk type="NoRef">ExecuteSQL ( $csql ; &quot;&quot; ; &quot;&quot; )</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$total</Name></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $raw; Value:ExecuteSQL ( $sql ; Char ( 31 ) ; Char ( 30 ) ) ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[ExecuteSQL ( $sql ; Char ( 31 ) ; Char ( 30 ) )]]></Calculation><DisplayCalculation><Chunk type="NoRef">ExecuteSQL ( $sql ; Char ( 31 ) ; Char ( 30 ) )</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$raw</Name></Step>
+<Step enable="True" id="69" name="Else"><StepText>Else [  ]</StepText><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $total; Value:ExecuteSQL ( $csql ; &quot;&quot; ; &quot;&quot; ; $like ; $like ; $like ; $like ) ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[ExecuteSQL ( $csql ; "" ; "" ; $like ; $like ; $like ; $like )]]></Calculation><DisplayCalculation><Chunk type="NoRef">ExecuteSQL ( $csql ; &quot;&quot; ; &quot;&quot; ; $like ; $like ; $like ; $like )</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$total</Name></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $raw; Value:ExecuteSQL ( $sql ; Char ( 31 ) ; Char ( 30 ) ; $like ; $like ; $like ; $like ) ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[ExecuteSQL ( $sql ; Char ( 31 ) ; Char ( 30 ) ; $like ; $like ; $like ; $like )]]></Calculation><DisplayCalculation><Chunk type="NoRef">ExecuteSQL ( $sql ; Char ( 31 ) ; Char ( 30 ) ; $like ; $like ; $like ; $like )</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$raw</Name></Step>
+<Step enable="True" id="70" name="End If"><StepText>End If</StepText><DisableStepCollapsed state="False"/></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText/><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $resultLog; Value:Let ( [
+
+// ExecuteSQL uses unit/record separators so a value containing a carriage
+// return (itemTitles does) cannot be mistaken for a row break. Park any real
+// ¶ on Char(11) first, then promote the record separator to ¶ so GetValue can
+// walk the rows.
+~safe = Substitute ( $raw ; [ ¶ ; Char ( 11 ) ] ; [ Char ( 30 ) ; ¶ ] ) ;
+~n    = ValueCount ( ~safe ) ;
+~bad  = IsEmpty ( $raw ) or Left ( $raw ; 1 ) = &quot;?&quot;
+
+] ;
+
+&quot;{\&quot;@odata.count\&quot;:&quot; &amp; GetAsNumber ( $total ) &amp; &quot;,\&quot;value\&quot;:[&quot; &amp;
+
+If ( ~bad ; &quot;&quot; ;
+While (
+	[ ~i = 1 ; ~out = &quot;&quot; ] ;
+	~i ≤ ~n ;
+	[ ~c = Substitute ( GetValue ( ~safe ; ~i ) ; Char ( 31 ) ; ¶ ) ;
+
+	  ~num = GetValue ( ~c ; 3 ) ;
+	  ~amt = GetValue ( ~c ; 10 ) ;
+
+	  ~o = JSONSetElement ( &quot;{}&quot;
+	        ; [ &quot;idText&quot;             ; GetValue ( ~c ; 1 )  ; JSONString ]
+	        ; [ &quot;portal&quot;             ; GetValue ( ~c ; 2 )  ; JSONString ]
+	        ; [ &quot;status&quot;             ; GetValue ( ~c ; 4 )  ; JSONString ]
+	        ; [ &quot;type&quot;               ; GetValue ( ~c ; 5 )  ; JSONString ]
+	        ; [ &quot;orderNumber&quot;        ; GetValue ( ~c ; 6 )  ; JSONString ]
+	        ; [ &quot;orderDate&quot;          ; GetValue ( ~c ; 7 )  ; JSONString ]
+	        ; [ &quot;customerName&quot;       ; GetValue ( ~c ; 8 )  ; JSONString ]
+	        ; [ &quot;customerEmail&quot;      ; GetValue ( ~c ; 9 )  ; JSONString ]
+	        ; [ &quot;itemCount&quot;          ; GetAsNumber ( GetValue ( ~c ; 11 ) ) ; JSONNumber ]
+	        ; [ &quot;itemTitles&quot;         ; Substitute ( GetValue ( ~c ; 12 ) ; Char ( 11 ) ; ¶ ) ; JSONString ]
+	        ; [ &quot;zzCreatedTimestamp&quot; ; GetValue ( ~c ; 13 ) ; JSONString ]
+	      ) ;
+
+	  ~o = If ( IsEmpty ( ~num ) ;
+	            JSONSetElement ( ~o ; &quot;number&quot; ; &quot;null&quot; ; JSONRaw ) ;
+	            JSONSetElement ( ~o ; &quot;number&quot; ; ~num ; JSONNumber ) ) ;
+
+	  ~o = If ( IsEmpty ( ~amt ) ;
+	            JSONSetElement ( ~o ; &quot;orderAmount&quot; ; &quot;null&quot; ; JSONRaw ) ;
+	            JSONSetElement ( ~o ; &quot;orderAmount&quot; ; ~amt ; JSONNumber ) ) ;
+
+	  ~out = ~out &amp; If ( ~i &gt; 1 ; &quot;,&quot; ) &amp; ~o ;
+	  ~i   = ~i + 1 ] ;
+	~out
+) )
+
+&amp; &quot;]}&quot; ) ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[Let ( [
+
+// ExecuteSQL uses unit/record separators so a value containing a carriage
+// return (itemTitles does) cannot be mistaken for a row break. Park any real
+// ¶ on Char(11) first, then promote the record separator to ¶ so GetValue can
+// walk the rows.
+~safe = Substitute ( $raw ; [ ¶ ; Char ( 11 ) ] ; [ Char ( 30 ) ; ¶ ] ) ;
+~n    = ValueCount ( ~safe ) ;
+~bad  = IsEmpty ( $raw ) or Left ( $raw ; 1 ) = "?"
+
+] ;
+
+"{\"@odata.count\":" & GetAsNumber ( $total ) & ",\"value\":[" &
+
+If ( ~bad ; "" ;
+While (
+	[ ~i = 1 ; ~out = "" ] ;
+	~i ≤ ~n ;
+	[ ~c = Substitute ( GetValue ( ~safe ; ~i ) ; Char ( 31 ) ; ¶ ) ;
+
+	  ~num = GetValue ( ~c ; 3 ) ;
+	  ~amt = GetValue ( ~c ; 10 ) ;
+
+	  ~o = JSONSetElement ( "{}"
+	        ; [ "idText"             ; GetValue ( ~c ; 1 )  ; JSONString ]
+	        ; [ "portal"             ; GetValue ( ~c ; 2 )  ; JSONString ]
+	        ; [ "status"             ; GetValue ( ~c ; 4 )  ; JSONString ]
+	        ; [ "type"               ; GetValue ( ~c ; 5 )  ; JSONString ]
+	        ; [ "orderNumber"        ; GetValue ( ~c ; 6 )  ; JSONString ]
+	        ; [ "orderDate"          ; GetValue ( ~c ; 7 )  ; JSONString ]
+	        ; [ "customerName"       ; GetValue ( ~c ; 8 )  ; JSONString ]
+	        ; [ "customerEmail"      ; GetValue ( ~c ; 9 )  ; JSONString ]
+	        ; [ "itemCount"          ; GetAsNumber ( GetValue ( ~c ; 11 ) ) ; JSONNumber ]
+	        ; [ "itemTitles"         ; Substitute ( GetValue ( ~c ; 12 ) ; Char ( 11 ) ; ¶ ) ; JSONString ]
+	        ; [ "zzCreatedTimestamp" ; GetValue ( ~c ; 13 ) ; JSONString ]
+	      ) ;
+
+	  ~o = If ( IsEmpty ( ~num ) ;
+	            JSONSetElement ( ~o ; "number" ; "null" ; JSONRaw ) ;
+	            JSONSetElement ( ~o ; "number" ; ~num ; JSONNumber ) ) ;
+
+	  ~o = If ( IsEmpty ( ~amt ) ;
+	            JSONSetElement ( ~o ; "orderAmount" ; "null" ; JSONRaw ) ;
+	            JSONSetElement ( ~o ; "orderAmount" ; ~amt ; JSONNumber ) ) ;
+
+	  ~out = ~out & If ( ~i > 1 ; "," ) & ~o ;
+	  ~i   = ~i + 1 ] ;
+	~out
+) )
+
+& "]}" )]]></Calculation><DisplayCalculation><Chunk type="NoRef">Let ( [
+
+// ExecuteSQL uses unit/record separators so a value containing a carriage
+// return (itemTitles does) cannot be mistaken for a row break. Park any real
+// ¶ on Char(11) first, then promote the record separator to ¶ so GetValue can
+// walk the rows.
+~safe = Substitute ( $raw ; [ ¶ ; Char ( 11 ) ] ; [ Char ( 30 ) ; ¶ ] ) ;
+~n    = ValueCount ( ~safe ) ;
+~bad  = IsEmpty ( $raw ) or Left ( $raw ; 1 ) = &quot;?&quot;
+
+] ;
+
+&quot;{\&quot;@odata.count\&quot;:&quot; &amp; GetAsNumber ( $total ) &amp; &quot;,\&quot;value\&quot;:[&quot; &amp;
+
+If ( ~bad ; &quot;&quot; ;
+While (
+	[ ~i = 1 ; ~out = &quot;&quot; ] ;
+	~i ≤ ~n ;
+	[ ~c = Substitute ( GetValue ( ~safe ; ~i ) ; Char ( 31 ) ; ¶ ) ;
+
+	  ~num = GetValue ( ~c ; 3 ) ;
+	  ~amt = GetValue ( ~c ; 10 ) ;
+
+	  ~o = JSONSetElement ( &quot;{}&quot;
+	        ; [ &quot;idText&quot;             ; GetValue ( ~c ; 1 )  ; JSONString ]
+	        ; [ &quot;portal&quot;             ; GetValue ( ~c ; 2 )  ; JSONString ]
+	        ; [ &quot;status&quot;             ; GetValue ( ~c ; 4 )  ; JSONString ]
+	        ; [ &quot;type&quot;               ; GetValue ( ~c ; 5 )  ; JSONString ]
+	        ; [ &quot;orderNumber&quot;        ; GetValue ( ~c ; 6 )  ; JSONString ]
+	        ; [ &quot;orderDate&quot;          ; GetValue ( ~c ; 7 )  ; JSONString ]
+	        ; [ &quot;customerName&quot;       ; GetValue ( ~c ; 8 )  ; JSONString ]
+	        ; [ &quot;customerEmail&quot;      ; GetValue ( ~c ; 9 )  ; JSONString ]
+	        ; [ &quot;itemCount&quot;          ; GetAsNumber ( GetValue ( ~c ; 11 ) ) ; JSONNumber ]
+	        ; [ &quot;itemTitles&quot;         ; Substitute ( GetValue ( ~c ; 12 ) ; Char ( 11 ) ; ¶ ) ; JSONString ]
+	        ; [ &quot;zzCreatedTimestamp&quot; ; GetValue ( ~c ; 13 ) ; JSONString ]
+	      ) ;
+
+	  ~o = If ( IsEmpty ( ~num ) ;
+	            JSONSetElement ( ~o ; &quot;number&quot; ; &quot;null&quot; ; JSONRaw ) ;
+	            JSONSetElement ( ~o ; &quot;number&quot; ; ~num ; JSONNumber ) ) ;
+
+	  ~o = If ( IsEmpty ( ~amt ) ;
+	            JSONSetElement ( ~o ; &quot;orderAmount&quot; ; &quot;null&quot; ; JSONRaw ) ;
+	            JSONSetElement ( ~o ; &quot;orderAmount&quot; ; ~amt ; JSONNumber ) ) ;
+
+	  ~out = ~out &amp; If ( ~i &gt; 1 ; &quot;,&quot; ) &amp; ~o ;
+	  ~i   = ~i + 1 ] ;
+	~out
+) )
+
+&amp; &quot;]}&quot; )</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$resultLog</Name></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText/><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="141" name="Set Variable"><StepText>Set Variable [ $meta; Value:JSONSetElement(&quot;&quot; ;[&quot;skip&quot;;$logSkip;JSONNumber] ;[&quot;top&quot;;$logTop;JSONNumber] ;[&quot;search&quot;;$logSearch;JSONString] ;[&quot;status&quot;;$logStatus;JSONString] ;[&quot;account&quot;;$logAccount;JSONString] ;[&quot;sqlError&quot;;Case ( Left ( $raw ; 1 ) = &quot;?&quot; ; &quot;The log query returned a SQL error.&quot; ; &quot;&quot; );JSONString]  ) ]</StepText><DisableStepCollapsed state="False"/><Value><Calculation><![CDATA[JSONSetElement("" ;["skip";$logSkip;JSONNumber] ;["top";$logTop;JSONNumber] ;["search";$logSearch;JSONString] ;["status";$logStatus;JSONString] ;["account";$logAccount;JSONString] ;["sqlError";Case ( Left ( $raw ; 1 ) = "?" ; "The log query returned a SQL error." ; "" );JSONString]  )]]></Calculation><DisplayCalculation><Chunk type="NoRef">JSONSetElement(&quot;&quot; ;[&quot;skip&quot;;$logSkip;JSONNumber] ;[&quot;top&quot;;$logTop;JSONNumber] ;[&quot;search&quot;;$logSearch;JSONString] ;[&quot;status&quot;;$logStatus;JSONString] ;[&quot;account&quot;;$logAccount;JSONString] ;[&quot;sqlError&quot;;Case ( Left ( $raw ; 1 ) = &quot;?&quot; ; &quot;The log query returned a SQL error.&quot; ; &quot;&quot; );JSONString]  )</Chunk></DisplayCalculation></Value><Repetition><Calculation><![CDATA[1]]></Calculation><DisplayCalculation><Chunk type="NoRef">1</Chunk></DisplayCalculation></Repetition><Name>$meta</Name></Step>
+<Step enable="True" id="175" name="Perform JavaScript in Web Viewer"><StepText>Perform JavaScript in Web Viewer [ Object Name: &quot;web&quot;; Function Name: &quot;setLogData&quot;;
+   Parameter 1:  $resultLog;
+   Parameter 2:  $meta ]</StepText><DisableStepCollapsed state="False"/><ObjectName><Calculation><![CDATA["web"]]></Calculation><DisplayCalculation><Chunk type="NoRef">&quot;web&quot;</Chunk></DisplayCalculation></ObjectName><FunctionName><Calculation><![CDATA["setLogData"]]></Calculation><DisplayCalculation><Chunk type="NoRef">&quot;setLogData&quot;</Chunk></DisplayCalculation></FunctionName><Parameters Count="2"><P><Calculation><![CDATA[$resultLog]]></Calculation><DisplayCalculation><Chunk type="NoRef">$resultLog</Chunk></DisplayCalculation></P><P><Calculation><![CDATA[$meta]]></Calculation><DisplayCalculation><Chunk type="NoRef">$meta</Chunk></DisplayCalculation></P></Parameters></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText/><DisableStepCollapsed state="False"/><Restore state="False"/></Step>
+<Step enable="True" id="89" name="# (comment)"><StepText>#--- end of logLoad branch ---</StepText><DisableStepCollapsed state="False"/><Restore state="False"/><Text>--- end of logLoad branch ---</Text></Step>
+</fmxmlsnippet>

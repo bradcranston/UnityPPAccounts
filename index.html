@@ -13,32 +13,282 @@
         <div class="header-left">
           <div class="account-type-tabs">
             <button class="tab-button active" id="individualTab" data-type="Individual">
-              Individual Accounts
+              Individual Accounts (Invoice)
             </button>
             <button class="tab-button" id="groupTab" data-type="Group">
-              Group Accounts
+              Group Accounts (Post Payment)
+            </button>
+            <button class="tab-button" id="logTab" data-type="Log">
+              Log
+            </button>
+            <button class="tab-button" id="pricesTab" data-type="Prices">
+              FCB Prices
+            </button>
+            <button class="tab-button" id="locationsTab" data-type="Locations">
+              FCB Locations
+            </button>
+            <button class="tab-button" id="reportTab" data-type="Report">
+              FCB Report
             </button>
           </div>
         </div>
-        <div class="stats">
+        <div class="stats" id="accountStats">
           <span class="stat-item">Total: <span id="totalCount">0</span></span>
           <span class="stat-item">Active: <span id="activeCount">0</span></span>
         </div>
+        <div class="stats" id="reportStats" hidden>
+          <span class="stat-item">Orders: <span id="reportCount">0</span></span>
+        </div>
+        <div class="stats" id="priceStats" hidden>
+          <span class="stat-item">Showing <span id="priceShown">0</span> of <span id="priceTotal">0</span> prices</span>
+          <span class="stat-item">Items: <span id="priceItems">0</span></span>
+        </div>
+        <div class="stats" id="locationStats" hidden>
+          <span class="stat-item">Storerooms: <span id="locStatStorerooms">0</span></span>
+          <span class="stat-item">Colors: <span id="locStatColors">0</span></span>
+          <span class="stat-item">IFC offices: <span id="locStatIfc">0</span></span>
+          <span class="stat-item">Order problems: <span id="locStatProblems">0</span></span>
+        </div>
+        <div class="stats" id="logStats" hidden>
+          <span class="stat-item">Showing <span id="logShown">0</span> of <span id="logTotal">0</span></span>
+        </div>
       </header>
-      
-      <div class="controls">
-        <input type="text" id="searchInput" placeholder="Search accounts..." />
-        <button id="clearFiltersBtn" class="clear-filters-btn" title="Clear filters">Clear</button>
-        <select id="filterSelect">
-          <option value="all">All Accounts</option>
-          <option value="active">Active Only</option>
-          <option value="inactive">Inactive Only</option>
-        </select>
-        <button id="addAccountBtn" class="add-account-btn">Add Account</button>
+
+      <!-- ================= ACCOUNTS ================= -->
+      <section id="accountsPanel">
+        <div class="controls">
+          <input type="text" id="searchInput" placeholder="Search accounts..." />
+          <button id="clearFiltersBtn" class="clear-filters-btn" title="Clear filters">Clear</button>
+          <select id="filterSelect">
+            <option value="all">All Accounts</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive Only</option>
+          </select>
+          <button id="addAccountBtn" class="add-account-btn">Add Account</button>
+        </div>
+
+        <div class="account-list" id="accountList">
+          <!-- Account items will be populated here -->
+        </div>
+      </section>
+
+      <!-- ================= LOG ================= -->
+      <section id="logPanel" hidden>
+        <div class="controls">
+          <input type="text" id="logSearchInput" placeholder="Search order #, portal, customer, email..." />
+          <button id="logClearBtn" class="clear-filters-btn" title="Clear filters">Clear</button>
+          <select id="logStatusSelect">
+            <option value="all">Any status</option>
+            <option value="new">New — never processed</option>
+            <option value="sent">Sent</option>
+            <option value="error">Error</option>
+            <option value="timed out">Timed out</option>
+            <option value="skipped">Skipped</option>
+            <option value="no active account">No active account</option>
+            <option value="manual">Manual stub</option>
+            <option value="blank">Status cleared</option>
+          </select>
+          <select id="logAccountSelect">
+            <option value="all">Any account</option>
+            <option value="active">On an active account</option>
+            <option value="none">No active account</option>
+          </select>
+          <button id="logRefreshBtn" class="add-account-btn">Refresh</button>
+        </div>
+
+        <div class="log-wrap">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th class="col-date">Received</th>
+                <th class="col-order">Order</th>
+                <th class="col-account">Account</th>
+                <th class="col-customer">Customer</th>
+                <th class="col-num">Items</th>
+                <th class="col-num">Amount</th>
+                <th class="col-status">Status</th>
+                <th class="col-action"></th>
+              </tr>
+            </thead>
+            <tbody id="logBody">
+              <tr class="log-empty-row">
+                <td colspan="8">
+                  <div class="empty-state">
+                    <h3>Nothing loaded yet</h3>
+                    <p>Open the Log tab to pull the most recent orders.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="log-footer">
+          <button id="logMoreBtn" class="load-more-btn" hidden>Load 200 more</button>
+          <span class="log-note" id="logNote"></span>
+        </div>
+      </section>
+
+      <!-- ================= FCB PRICES ================= -->
+      <section id="pricesPanel" hidden>
+        <p class="panel-intro">
+          First Commonwealth (acct 22860) chart prices. Order notes in PrintSmith use these, not the
+          online store price. Match the SKU exactly as the store sends it.
+        </p>
+        <div class="controls">
+          <input type="text" id="priceSearchInput" placeholder="Search SKU or description..." autocomplete="off" />
+          <button id="priceClearBtn" class="clear-filters-btn" title="Clear filters">Clear</button>
+          <select id="priceTierSelect">
+            <option value="all">All sizes</option>
+            <option value="BASE">S – XL</option>
+            <option value="2XL">2XL</option>
+            <option value="3XL">3XL</option>
+            <option value="4XL">4XL</option>
+            <option value="5XL">5XL</option>
+            <option value="6XL">6XL</option>
+            <option value="ONE">One size</option>
+          </select>
+          <button id="priceRefreshBtn" class="clear-filters-btn">Refresh</button>
+          <button id="priceAddBtn" class="add-account-btn">Add item</button>
+        </div>
+
+        <div class="log-wrap">
+          <table class="log-table price-table">
+            <thead>
+              <tr>
+                <th class="col-sku">SKU</th>
+                <th class="col-desc">Description</th>
+                <th class="col-tier">Size tier</th>
+                <th class="col-price">Price</th>
+                <th class="col-mod">Last changed</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody id="priceBody">
+              <tr class="log-empty-row">
+                <td colspan="6">
+                  <div class="empty-state empty-state-muted"><h3>Nothing loaded yet</h3></div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= FCB LOCATIONS ================= -->
+      <section id="locationsPanel" hidden>
+        <p class="panel-intro">
+          Where First Commonwealth (acct 22860) orders ship. Each order's delivery answer is matched to one of
+          these locations for the PrintSmith ship-to address and delivery job. Changes apply to the next order;
+          orders already sent keep their address.
+        </p>
+        <div class="controls">
+          <div class="loc-views" id="locationViews">
+            <button data-view="storerooms" class="active">Storeroom colors</button>
+            <button data-view="ifc">IFC offices</button>
+            <button data-view="orders">Recent orders <span class="loc-badge" hidden>0</span></button>
+          </div>
+          <input type="text" id="locationSearchInput" placeholder="Search name, color, city..." autocomplete="off">
+          <button id="locationClearBtn" class="clear-filters-btn" title="Clear search">Clear</button>
+          <select id="locationDaysSelect" title="How far back to look at FCB orders">
+            <option value="30">Orders: last 30 days</option>
+            <option value="90" selected>Orders: last 90 days</option>
+            <option value="180">Orders: last 180 days</option>
+            <option value="365">Orders: last year</option>
+          </select>
+          <button id="locationRefreshBtn" class="clear-filters-btn">Refresh</button>
+          <button id="locationAddBtn" class="add-account-btn">Add color</button>
+        </div>
+        <div id="locationBody">
+          <div class="empty-state empty-state-muted"><h3>Nothing loaded yet</h3></div>
+        </div>
+      </section>
+
+      <!-- ================= FCB REPORT ================= -->
+      <section id="reportPanel" hidden>
+        <p class="panel-intro">
+          The monthly detail and promo code workbook for First Commonwealth. Marketing contribution comes
+          from the FCB Prices tab, so fix any missing prices before you generate.
+        </p>
+        <div class="controls">
+          <select id="reportMonth"></select>
+          <button id="reportLoadBtn" class="clear-filters-btn">Load</button>
+          <label class="rpt-credit">Credit (prepaid inventory)
+            <input type="text" id="reportCredit" inputmode="decimal" placeholder="optional" autocomplete="off" />
+          </label>
+          <button id="reportGenerateBtn" class="add-account-btn" disabled>Generate .xlsx</button>
+          <span class="rpt-status" id="reportStatus"></span>
+        </div>
+
+        <div class="rpt-cards" id="reportCards"></div>
+        <div id="reportWarnings"></div>
+
+        <div class="log-wrap">
+          <table class="log-table price-table">
+            <thead>
+              <tr>
+                <th class="col-date">Ordered</th>
+                <th>Tracking number</th>
+                <th class="col-price">Subtotal</th>
+                <th>Promo code</th>
+                <th class="col-price">Marketing</th>
+                <th class="col-desc">Items</th>
+              </tr>
+            </thead>
+            <tbody id="reportBody">
+              <tr class="log-empty-row">
+                <td colspan="6"><div class="empty-state empty-state-muted"><h3>Nothing loaded yet</h3></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Add / edit FCB location modal -->
+    <div id="locationModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="locationModalTitle">Add location</h2>
+          <span class="close" id="closeLocationModal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="price-form">
+            <div id="locationForm"></div>
+            <div class="manual-error" id="locationFormError" hidden></div>
+            <div class="price-form-actions">
+              <button id="locationFormSave" class="add-account-btn">Save location</button>
+            </div>
+          </div>
+        </div>
       </div>
-      
-      <div class="account-list" id="accountList">
-        <!-- Account items will be populated here -->
+    </div>
+
+    <!-- Add FCB price modal -->
+    <div id="priceModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Add FCB item prices</h2>
+          <span class="close" id="closePriceModal">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="price-form">
+            <label class="field">
+              <span>SKU</span>
+              <input type="text" id="priceNewSku" autocomplete="off" placeholder="e.g. K200LS" />
+            </label>
+            <label class="field">
+              <span>Description</span>
+              <input type="text" id="priceNewDesc" autocomplete="off" placeholder="optional" />
+            </label>
+            <p class="price-hint" id="priceNewHint"></p>
+            <div class="tier-grid" id="priceNewGrid"></div>
+            <div class="manual-error" id="priceNewError" hidden></div>
+            <div class="price-form-actions">
+              <button id="priceNewSave" class="add-account-btn">Save prices</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -50,6 +300,31 @@
           <span class="close" id="closeModal">&times;</span>
         </div>
         <div class="modal-body">
+
+          <!-- Manual entry: no webhook record required -->
+          <div class="manual-add">
+            <div class="manual-add-head">
+              <h3>Enter it manually</h3>
+              <p>For an account that has not sent an order through yet.</p>
+            </div>
+            <div class="manual-row">
+              <input type="text" id="manualNumber" inputmode="numeric" autocomplete="off"
+                     placeholder="PrintSmith account #" />
+              <input type="text" id="manualName" autocomplete="off"
+                     placeholder="Account name" />
+              <button id="manualAddBtn" class="add-account-btn">Add</button>
+            </div>
+            <div class="manual-row manual-prefix-row">
+              <input type="text" id="manualPrefix" autocomplete="off" spellcheck="false"
+                     placeholder="Tracking prefix (optional)" />
+              <span class="manual-prefix-hint">Only for orders that arrive with no portal: the text their tracking number starts with. Separate more than one with commas.</span>
+            </div>
+            <div class="manual-preview" id="manualPreview" hidden></div>
+            <div class="manual-error" id="manualError" hidden></div>
+          </div>
+
+          <div class="modal-divider"><span>or pick one that has already ordered</span></div>
+
           <div class="modal-controls">
             <input type="text" id="portalSearchInput" placeholder="Search available portals..." />
             <div class="portal-count">
@@ -62,7 +337,10 @@
         </div>
       </div>
     </div>
-    
+
+    <!-- transient message -->
+    <div id="toast" class="toast" hidden></div>
+
     <script type="module">
       import "./src/index.js";
     </script>
